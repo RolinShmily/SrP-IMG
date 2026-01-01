@@ -21,6 +21,7 @@ DEFAULT_HASH_LENGTH = 3
 DEFAULT_EXT = ".jpg"
 SOURCE_DIR = Path("oriImg")
 OUTPUT_DIR = Path("dist")
+FUNCTIONS_DIR = Path("functions")
 
 
 def ensure_dir(p: Path):
@@ -103,8 +104,8 @@ try{
 }catch(e){}
 ''')
 
-    # write into dist/functions so Cloudflare Pages picks it up there
-    functions_dir = OUTPUT_DIR / 'functions'
+    # write into repository root functions/ so Pages (or wrangler) can pick it up
+    functions_dir = FUNCTIONS_DIR
     ensure_dir(functions_dir)
     path = functions_dir / out_name
     with open(path, 'w', encoding='utf-8') as f:
@@ -206,8 +207,8 @@ async function handleRequest(request) {{
 }}
 """
 
-    # write server-side function into dist/functions for Pages
-    functions_dir = OUTPUT_DIR / 'functions'
+    # write server-side function into repository root `functions/` for Pages/Wrangler
+    functions_dir = FUNCTIONS_DIR
     ensure_dir(functions_dir)
     path = functions_dir / out_name
     with open(path, 'w', encoding='utf-8') as f:
