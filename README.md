@@ -65,10 +65,10 @@ oriImg/
 
 ```powershell
 # 占位符生成（开发） 🧪
-python gen_img.py --no-copy --hash-length 3
+python3 gen_img.py --no-copy --hash-length 3
 
 # 生产构建：复制真实图片到 dist/ 🚀
-python gen_img.py --hash-length 3
+python3 gen_img.py --hash-length 3
 ```
 
 这样 `gen_img.py` 会把素材扩充为 `dist/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `dist/counts.json`，可直接部署到 Pages。
