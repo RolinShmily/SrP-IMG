@@ -4,8 +4,8 @@
 Produces:
  - dist/counts.json
  - dist/index.html
- - dist/cf-redirect.js
- - (optionally) dist/ri/<category>/<hex>.<ext> files when --no-copy is not used
+ - functions/pic.js
+ - (optionally) dist/<category>/<hex>.<ext> files when --no-copy is not used
 """
 
 import argparse
@@ -41,7 +41,7 @@ def clear_dir_files(p: Path):
 
 def process_category(category: str, src_files: list, hash_length: int, out_ext: str, do_copy: bool):
     num_files = 16 ** hash_length
-    out_dir = OUTPUT_DIR / 'ri' / category
+    out_dir = OUTPUT_DIR / category
     ensure_dir(out_dir)
     clear_dir_files(out_dir)
 
@@ -81,13 +81,13 @@ def build_counts_json(counts: dict, hash_length: int, out_ext: str, domain: str 
     return meta
 
 
-def generate_cf_redirect(meta: dict, out_name: str = 'cf-redirect.js'):
+def generate_cf_redirect(meta: dict, out_name: str = 'pic.client.js'):
     counts = meta.get('counts', {})
     hl = meta.get('hash_length', DEFAULT_HASH_LENGTH)
     ext = meta.get('output_ext', DEFAULT_EXT)
 
     js = []
-    js.append('/* Auto-generated cf-redirect.js */')
+    js.append('/* Auto-generated pic.client.js */')
     js.append(f'const COUNTS = {json.dumps(counts)};')
     js.append(f'const HASH_LENGTH = {hl};')
     js.append(f"const OUTPUT_EXT = '{ext}';")
@@ -99,8 +99,8 @@ def generate_cf_redirect(meta: dict, out_name: str = 'cf-redirect.js'):
 try{
   var sp=new URLSearchParams(window.location.search);
   var img=sp.get('img');
-  if(img==='h'||img==='v'){ var c=COUNTS[img]||0; if(c) window.location.href='/ri/'+img+'/'+hexName(rnd(c)); }
-  else if(img==='ua'){ var ua=navigator.userAgent||''; if(isMobile(ua)){ var c=COUNTS['v']||0; if(c) window.location.href='/ri/v/'+hexName(rnd(c)); } else { var c=COUNTS['h']||0; if(c) window.location.href='/ri/h/'+hexName(rnd(c)); } }
+  if(img==='h'||img==='v'){ var c=COUNTS[img]||0; if(c) window.location.href='/' + img + '/' + hexName(rnd(c)); }
+  else if(img==='ua'){ var ua=navigator.userAgent||''; if(isMobile(ua)){ var c=COUNTS['v']||0; if(c) window.location.href='/v/'+hexName(rnd(c)); } else { var c=COUNTS['h']||0; if(c) window.location.href='/h/'+hexName(rnd(c)); } }
 }catch(e){}
 ''')
 
@@ -124,7 +124,7 @@ def generate_index_html(meta: dict):
         if c==0: continue
         for i in range(min(c,64)):
             name = f"{i:0{hl}x}{ext}"
-            url = f"./ri/{t}/{name}"
+            url = f"./{t}/{name}"
             parts.append(f'<div class="grid-item" data-type="{t}"><img src="{url}" alt="{t}-{i}" loading="lazy"></div>')
 
     parts.append('</div>')
@@ -138,7 +138,7 @@ def generate_index_html(meta: dict):
     print(f"Wrote {path}")
 
 
-def generate_cf_worker(meta: dict, out_name: str = 'cf-redirect.js'):
+def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
     """Generate a server-side Cloudflare Pages Function / Worker that performs UA-based 302 redirects.
     The function exports onRequest(context) to be compatible with EdgeOne/Pages function style used in this repo.
     """
@@ -175,24 +175,24 @@ async function handleRequest(request) {{
         if(img === 'h') {{
             if(!maxH) return new Response('No horizontal images', {{status:404}});
             const idx = Math.floor(Math.random()*maxH);
-            const location = '/ri/h/' + hexName(idx);
+            const location = '/h/' + hexName(idx);
             return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
         }} else if(img === 'v') {{
             if(!maxV) return new Response('No vertical images', {{status:404}});
             const idx = Math.floor(Math.random()*maxV);
-            const location = '/ri/v/' + hexName(idx);
+            const location = '/v/' + hexName(idx);
             return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
         }} else if(img === 'ua') {{
             const ua = request.headers.get('User-Agent') || '';
             if(isMobileDevice(ua)) {{
                 if(!maxV) return new Response('No vertical images', {{status:404}});
                 const idx = Math.floor(Math.random()*maxV);
-                const location = '/ri/v/' + hexName(idx);
+                const location = '/v/' + hexName(idx);
                 return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
             }} else {{
                 if(!maxH) return new Response('No horizontal images', {{status:404}});
                 const idx = Math.floor(Math.random()*maxH);
-                const location = '/ri/h/' + hexName(idx);
+                const location = '/h/' + hexName(idx);
                 return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
             }}
         }}
@@ -249,9 +249,9 @@ def main(argv=None):
 
     meta = build_counts_json(counts, hl, ext, args.domain)
     # generate server-side CF Pages function for UA-based redirects
-    generate_cf_worker(meta, 'cf-redirect.js')
+    generate_cf_worker(meta, 'pic.js')
     # do NOT generate client-side helper or gallery page per user request
-    # generate_cf_redirect(meta, 'cf-redirect.client.js')
+    # generate_cf_redirect(meta, 'pic.client.js')
     # generate_index_html(meta)
 
 if __name__ == '__main__':

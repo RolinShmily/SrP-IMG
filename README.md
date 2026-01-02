@@ -1,116 +1,82 @@
-# SrP-IMG — Cloudflare Pages 静态随机图片服务
+# SrP-IMG — Cloudflare Pages 随机图片静态服务 🖼️
 
-本仓库使用 `gen_img.py` 预生成按分类的十六进制命名图片集合，并在构建时生成 Cloudflare Pages 可部署的 Functions（放在 `dist/functions/`）。把 `dist/` 部署到 Cloudflare Pages 后，即可提供基于 UA/分类的随机图片重定向服务。
+这是一个用于演示和部署到 Cloudflare Pages 的静态随机图片生成/重定向项目。
 
-主要说明
+## 总体说明 ✅
 
-- 构建时会把 `counts` / `hash_length` / `output_ext` 注入到 `dist/functions/cf-redirect.js`，函数运行时无需访问文件系统。
-- 开发时可使用 `--no-copy` 快速生成占位文件；生产时使用 `--hash-length 3`（4096）并复制真实图片。
+- 使用 `gen_img.py` 预生成按分类（例如 `h`、`v`）的十六进制命名图片集合。
+- 构建时会把元数据（`counts` / `hash_length` / `output_ext`）注入到 `functions/pic.js`，以便 Cloudflare Pages Functions 在边缘返回 302 重定向到随机图片，无需运行时读盘。 ⚡
+- 默认生成路径：`dist/<category>/<hex>.<ext>`（例如 `dist/h/000.jpg`）。
+- 开发时可使用 `--no-copy` 生成占位文件以加快本地迭代；生产建议使用 `--hash-length 3`（16³ = 4096）以覆盖随机空间。 🛠️
 
-目录概览
+## 仓库结构（简要） 📁
 
 ```text
-├── oriImg/           # 原始图片素材（按分类，如 h, v）
-├── dist/             # 构建输出（部署目录）
-│   ├── functions/    # Pages Functions（gen_img.py 生成）
-│   ├── ri/           # 生成的图片（hex 命名）
-│   └── counts.json
-├── gen_img.py        # 构建脚本
+├── oriImg/           # 原始素材（每个子目录为一个分类，如 h/ v/）
+├── dist/             # 构建产物（部署此目录）
+│   ├── h/            # 横屏图片（hex 命名）
+│   ├── v/            # 竖屏图片（hex 命名）
+│   └── counts.json   # 构建时生成的元数据
+├── functions/        # Cloudflare Pages Functions（生成后可直接部署）
+│   └── pic.js        # 由 gen_img.py 生成的 server-side 重定向函数
+├── gen_img.py        # 构建脚本（生成 dist/ 与 functions/pic.js）
 └── README.md
 ```
 
-快速构建与验证（Windows PowerShell）
+## 构建产物 📦
+
+- `dist/counts.json` — 包含 `counts` / `hash_length` / `output_ext` / `domain` / `generated_at`
+- `functions/pic.js` — Pages Function（server-side），已注入 `counts` 和 `hash_length`；部署后可通过 `/pic?img=...` 使用
+- `dist/<category>/` — 每个分类目录包含按 hex 命名的图片（占位或真实）
+
+## 示例（部署后） 🔗
+
+- 随机横图： `https://<your-domain>/pic?img=h` ↔️
+- 随机竖图： `https://<your-domain>/pic?img=v` ↕️
+- 根据 UA 自动选择： `https://<your-domain>/pic?img=ua` 📱↔️
+
+## 部署建议（Cloudflare Pages） ☁️
+
+- 推荐流程：在本地运行 `gen_img.py` 生成 `dist/`，然后将 `dist/` 或整个仓库部署到 Pages；Pages 会自动识别 `functions/` 下的脚本并部署为 Pages Functions。
+  -- 如果使用 Pages 的 Git 集成，注意不要意外将大量占位/真实图片推送到主分支（会导致仓库膨胀）。
+  -- 推荐做法：在本地或 CI 中生成 `dist/` 并将 `dist/` 发布到 Pages；将原始素材保留在本地 `oriImg/` 目录中，不要直接把大量图片提交到主分支。
+
+如何准备你的素材（放到 `oriImg/`）
+
+- 在仓库根创建 `oriImg/`（如果尚未存在），并为每个分类创建子目录，例如：
+
+```
+oriImg/
+├── h/    # 横屏图片
+└── v/    # 竖屏图片
+```
+
+- 把你自己的图片上传到相应的分类目录（支持 `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` 等常见格式）。
+- 命名不限：构建脚本会按循环分配并生成十六进制命名的输出文件到 `dist/`。
+- 本地构建示例（PowerShell）：
 
 ```powershell
-cd D:\desktop\RoL1n\SrP-IMG
-# 快速占位构建（hash-length=2 用于本地测试）
-python gen_img.py --no-copy --hash-length 2
+# 占位符生成（开发/演示） 🧪
+python gen_img.py --no-copy --hash-length 3
 
-# 生产构建（生成 4096 个/分类，耗 IO 较大）
+# 生产构建：复制真实图片到 dist/ 🚀
 python gen_img.py --hash-length 3
 ```
 
-快速构建会生成：
+这样 `gen_img.py` 会把素材扩充为 `dist/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `dist/counts.json`，可直接部署到 Pages。
 
-- `dist/counts.json` — 构建元数据（counts/hash_length/output_ext）
-- `dist/functions/cf-redirect.js` — Pages Function（server-side），已注入 counts/hash_length
-- `dist/ri/<category>/` — 生成的图片（占位或真实图片）
+## Cloudflare Transform Rules（可选，改写直接到静态图） 🔁
 
-部署到 Cloudflare Pages
+如果要把路径 `/h`、`/v` 等直接映射到随机图片（无需函数），可使用 Transform Rules 的 Rewrite URL：
 
-推荐流程：本地运行 `gen_img.py` 构建 `dist/`，然后把 `dist/` 的内容部署到 Pages；Pages 会自动识别并部署 `functions/` 下的脚本。
-
-验证示例（部署后）
-
-- 随机横图： https://<your-domain>/functions/cf-redirect?img=h
-- 随机竖图： https://<your-domain>/functions/cf-redirect?img=v
-- 根据 UA 自动选择： https://<your-domain>/functions/cf-redirect?img=ua
-
-注意事项
-
-- 我已将画廊页面（`dist/index.html`）与随机客户端脚本（`random.js` / client helper）从默认产物中移除；如果需要我可以恢复。
-- 构建时内联 counts 更适合边缘运行环境，避免运行时读盘。
-
-如果需要我可以：
-
-- 生成 `build.ps1` 封装常用构建命令；
-- 添加本地测试脚本，用于模拟 Pages `onRequest` 并验证 UA 路由。
-
-# Cloudflare Random Image API
-
-一个基于 Cloudflare Pages 和 Transform Rules 实现的**无限流量、零成本、多分类**随机图片 API。
-
-## 🌟 原理
-
-利用 Cloudflare 的边缘重写能力（Rewrite URL），将用户的分类请求（如 `/h`）动态映射到预生成的静态资源路径（如 `/h/a1b.jpg`）。整个过程在边缘节点完成，无需服务器后端，无需 Worker 调用额度。
-
-## 📂 目录结构
+1. Cloudflare → Rules → Transform Rules → Create rule → Rewrite URL
+2. 设置匹配：例如 `URI Path` matches `^/[a-zA-Z0-9_-]+$`
+3. Path Rewrite（Dynamic 方式），输入表达式：
 
 ```text
-├── oriImg/           # 原始图片素材目录
-│   ├── h/            # 示例：横屏图片分类
-│   └── v/            # 示例：竖屏图片分类
-├── dist/             # 生成的静态资源目录（部署此目录）
-├── gen_img.py        # 资源生成脚本
-└── README.md         # 说明文档
+concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jpg")
 ```
 
-## 🚀 部署指南
+使用：直接访问 `https://<your-domain>/<category>`，Cloudflare 内部重写为 `dist/<category>/<hex>.<ext>`
 
-### 1. 准备素材
-
-在 `oriImg` 目录下建立你的分类文件夹（例如 `h`, `pc`, `mobile` 等），并将对应的图片放入其中。
-
-> 支持 `.jpg`, `.png`, `.webp` 等常见格式。
-
-### 2. 生成静态库
-
-运行 Python 脚本，它会将图片扩充并重命名为十六进制哈希文件名（`000.jpg` ~ `fff.jpg`），以适配 Cloudflare 的随机逻辑。
-
-```bash
-python gen_img.py
-```
-
-_脚本会在 `dist/` 目录下生成处理好的文件，每个分类包含 4096 个文件（16^3）。_
-
-### 3. 部署到 Cloudflare Pages
-
-将 `dist` 目录下的内容部署到 Cloudflare Pages。
-
-- 如果使用 Git 集成，确保 Build output directory 设置为 `dist`（如果你把 dist 提交了）或者在构建命令中运行生成脚本。
-- **推荐**：直接在本地运行脚本后，将 `dist` 目录作为静态站点上传，或者仅提交 `dist` 目录内容。
-
-### 4. 配置 Cloudflare Rules (关键)
-
-进入你的 Cloudflare 域名管理面板：
-
-1. 导航到 **Rules** > **Transform Rules**。
-2. 点击 **Create rule**，选择 **Rewrite URL**。
-3. 配置如下：
-
-- **Rule name**: Random Image
-- **Filter Expression**:
-
-  - 建议匹配你的 API 路径，例如：
-  - `URI Path` matches `^/[a-zA-Z0-9_-]+$`
-
+> **注意**：如果你使用 `cf.random_seed` 的方式取 `0-2` 位（即长度为 2），那么生成脚本的 `--hash-length` 参数也应设置为 `2`。 🔢
