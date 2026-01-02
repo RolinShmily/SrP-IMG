@@ -1,10 +1,10 @@
 {
   "counts": {
-    "h": 4096,
-    "v": 4096
+    "h": 256,
+    "v": 256
   },
-  "hash_length": 3,
+  "hash_length": 2,
   "output_ext": ".jpg",
   "domain": "",
-  "generated_at": "2026-01-02T02:57:07.443100Z"
+  "generated_at": "2026-01-02T07:49:20.540889Z"
 }

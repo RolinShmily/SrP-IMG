@@ -65,15 +65,17 @@ oriImg/
 
 ```powershell
 # 占位符生成（开发） 🧪
-python3 gen_img.py --no-copy --hash-length 3
+python gen_img.py --no-copy --hash-length 3
 
 # 生产构建：复制真实图片到 dist/ 🚀
-python3 gen_img.py --hash-length 3
+python gen_img.py --hash-length 3
 ```
 
 这样 `gen_img.py` 会把素材扩充为 `dist/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `dist/counts.json`，可直接部署到 Pages。
 
-**注**：`--hash-length`的参数可以为`1`、`2`、`3`...，分别对应`16`、`256`、`4096`...个输出值。
+**注**：
+- `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。
+- `--hash-length`的参数可以为`1`、`2`、`3`...，分别对应`16`、`256`、`4096`...个输出值。
 
 ## (可选) Cloudflare Transform Rules 🔁
 
