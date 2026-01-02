@@ -1,13 +1,20 @@
 {
   "counts": {
+    "gif": 256,
     "h": 256,
     "v": 256
   },
   "real_counts": {
+    "gif": 6,
     "h": 11,
     "v": 5
   },
+  "category_exts": {
+    "gif": ".gif",
+    "h": ".jpg",
+    "v": ".jpg"
+  },
   "hash_length": 2,
   "output_ext": ".jpg",
-  "generated_at": "2026-01-02T15:16:49.860120Z"
+  "generated_at": "2026-01-02T16:34:24.254641Z"
 }

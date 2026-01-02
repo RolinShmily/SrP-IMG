@@ -1,97 +1,153 @@
-# SrP-IMG — 随机图片API 🖼️
+# SrP-IMG — 全功能随机图片 API & 画廊 🖼️
 
-一个基于Cloudflare Pages 和 Transform Rules，提供两种图片获取方式和画廊展示界面的**无限流量**、**零成本**、**多分类**随机图片API。
+一个基于 Cloudflare Pages 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
 
-灵感来源：
+### 核心亮点 ✨
 
-- [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)
-- [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)
-- [v0-gallery-website](https://github.com/afoim/v0-gallery-website)
+* **零成本方案**：完全托管于 Cloudflare Pages，无需服务器，无需数据库。
+* **智能多分类**：支持 `h` (横屏)、`v` (竖屏) 以及自定义分类（如 `gif`、`wallpaper`）。
+* **动态后缀支持**：`h/v` 固定为 `.jpg` 确保 API 兼容性，其他分类自动侦测原图后缀（如 `.gif`, `.png`）。
+* **自动化画廊**：前端画廊通过读取 `counts.json` 自动适配分类、数量和文件格式，无需手动修改代码。
+* **双模式调用**：支持 JS 重定向 (API 模式) 与 URL 重写 (无感模式)。
 
-## 总体说明 ✅
-
-- 使用 `gen_img.py` 预生成按分类（例如 `h`、`v`）的十六进制命名图片集合。
-- 默认生成路径：`public/<category>/<hex>.<ext>`（例如 `public/h/000.jpg`）。
-- 开发时使用 `--no-copy` 生成占位文件以加快本地迭代；生产使用 `--hash-length 3`（16³ = 4096）以覆盖随机空间。 🛠️
-- 随后通过`Next.js 14+`的`npm run build`构建出画廊页面，此时会将`public`下的所有文件复制进输出文件夹`out`。
-
-## 仓库结构（简要） 📁
+## 📁 目录结构
 
 ```text
-├── oriImg/           # 原始素材（每个子目录为一个分类，如 h/ v/）
-├── public/             # 构建产物（部署此目录）
-│   ├── h/            # 横屏图片（hex 命名）
-│   ├── v/            # 竖屏图片（hex 命名）
-│   └── counts.json   # 构建时生成的元数据
-├── functions/        # Cloudflare Pages Functions（生成后可直接部署）
-│   └── pic.js        # 由 gen_img.py 生成的 server-side 重定向函数
-├── gen_img.py        # 构建脚本（生成 dist/ 与 functions/pic.js）
+├── oriImg/           # [核心] 原始素材目录
+│   ├── h/            # 横屏图片素材（强转为 .jpg）
+│   ├── v/            # 竖屏图片素材（强转为 .jpg）
+│   └── gif/          # 自定义分类（自动保留 .gif 后缀）
+├── public/           # 构建产物目录（存放生成的十六进制图片和元数据）
+│   ├── h/、v/、gif/   # 映射后的图片集合
+│   └── counts.json   # 自动生成的全站索引文件
+├── functions/        # Cloudflare Pages Functions
+│   └── pic.js        # 由脚本生成的服务端重定向接口
+├── components/       # Next.js 组件
+│   └── image-gallery.tsx # 核心画廊组件（映射表逻辑）
+├── gen_img.py        # 构建大脑：处理图片命名、后缀识别及生成元数据
 └── README.md
-```
-
-## 使用示例 🔗
-
-**注意**：
-
-- JS重定向方式不局限于Cloudflare Pages部署
-- 但URL重写方式需要在Cloudflare Pages部署
-
-### JS重定向
-
-- 随机横图： `https://<your-domain>/pic?img=h` ↔️
-- 随机竖图： `https://<your-domain>/pic?img=v` ↕️
-- 根据 UA 自动选择： `https://<your-domain>/pic?img=ua` 📱
-
-### URL重写
-
-- 随机横图： `https://<your-domain>/h` ↔️
-- 随机竖图： `https://<your-domain>/v` ↕️
-- 自定义图库： `https://<your-domain>/<category>` 📱
-
-## 部署（Cloudflare Pages） ☁️
-
-### 素材准备
-
-- 在仓库根 `oriImg/` 为每个分类创建子目录，例如：
 
 ```
-oriImg/
-├── h/    # 横屏图片
-└── v/    # 竖屏图片
-```
 
-- 把你自己的图片上传到相应的分类目录（支持 `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` 等常见格式）。
-- 命名不限：构建脚本会按循环分配并生成十六进制命名的输出文件到 `public/`。
+## 🚀 部署指南
 
-### 构建命令
+### 1. 素材准备
 
-开发测试：占位符生成 🧪 (分步执行)
+在根目录 `oriImg/` 下创建分类文件夹。
+
+* **API 专用**：创建 `h` 和 `v` 目录，放入横/竖屏图片（这些图片在输出时会固定为 `.jpg` 以兼容所有 API 客户端）。
+* **自定义分类**：创建如 `gif`、`anime` 等目录。脚本会自动取该目录第一张图片的后缀作为该分类的输出后缀。
+
+### 2. 本地测试
+
+如果您想在本地预览画廊效果，请执行：
+
 ```powershell
+# 使用 --no-copy 快速生成虚拟文件进行测试
 python gen_img.py --no-copy --hash-length 2
 npm run dev
+
 ```
 
-CI(CloudflarePages)生产构建：复制真实图片到 public/ 🚀
+### 3. Cloudflare Pages 生产构建
+
+在 Cloudflare 仪表板配置如下：
+
+* **框架预设**：`Next.js`
+* **构建命令**：
+```bash
+python3 gen_img.py --hash-length 3 && npm run build
+
 ```
-python3 gen_img.py --hash-length 2 && npm run build
+
+* **输出目录**：`out`
+* **环境变量**：确保 Python 环境为 3.8+
+
+## 🔗 使用方式
+
+### 方式 A：服务端 API (JS 重定向)
+
+由生成的 `functions/pic.js` 提供支持，适合在 Markdown 或其他网页中直接引用。
+
+| 功能描述 | 调用地址 | 返回结果 |
+| --- | --- | --- |
+| **随机横图** | `/pic?img=h` | 302 重定向至 `/h/xxx.jpg` |
+| **随机竖图** | `/pic?img=v` | 302 重定向至 `/v/xxx.jpg` |
+| **UA 自动选择** | `/pic?img=ua` | 手机返回竖图，电脑返回横图 |
+
+### 方式 B：前端可视化画廊
+
+访问部署后的根域名（如 `https://your-domain.pages.dev`）：
+
+* **自动适配**：顶部导航会自动切换 `h`、`v` 或 `gif` 模式。
+* **瀑布流展示**：基于 Next.js 的高性能瀑布流加载。
+* **沉浸式预览**：集成 Fancybox，支持缩放、旋转、全屏及下载。
+
+### 方式 C：URL 重写 (无感随机)
+
+*需在 Cloudflare 仪表板手动配置 **Transform Rules**：*
+
+- 请将下列表达式中`<your-domain>`换成你的域名
+
+URL重写规则一：
+1. **匹配表达式**：
+```text
+(http.host eq "<your-domain>" and not starts_with(http.request.uri.path, "/pic") and not starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".jpg"))
+```
+2. 路径**重写至 (Dynamic)**：
+```text
+concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 ```
 
-构建输出文件夹为:`/out/`
+URL重写规则二：
+1. **匹配表达式**：
+```text
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif"))
+```
+2. 路径**重写至 (Dynamic)**：
+```text
+concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
+```
 
-**注**：
-- `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。
-- `--hash-length`的参数可以为`2`或者`3`，分别对应`256`或者`4096`个输出值。
+**注意**：如果你的构建命令中`--hash-length`值为`3`,那么这里`cf.random_seed`的随机范围右边界也要从`2`改为`3`。
 
-## (可选) Cloudflare Transform Rules 🔁
+## 🛠️ 技术参数细节
 
-**注**:此部分对应URL重写方法，需要你的CI为Cloudflare Pages。
+### 关于 `gen_img.py`
+
+脚本执行时会进行以下操作：
+
+1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成  个访问路径。
+2. **后缀策略**：
+* 检查 `oriImg` 下每个子目录。
+* 若目录名为 `h` 或 `v`，输出后缀强制遵循命令行参数（默认 `.jpg`）。
+* 否则，自动探测该目录首张图片后缀。
+
+
+3. **元数据导出**：生成 `counts.json`，记录每个分类的图片总数 (`counts`) 和对应后缀 (`category_exts`)。
+
+### 关于画廊映射表
+
+画廊组件内部使用 `typeToFolder` 映射表进行解耦。若需增加新分类，仅需：
+
+1. 在 `oriImg` 新建文件夹。
+2. 在 `page.tsx` 增加对应的按钮。
+前端会自动匹配 `counts.json` 中的后缀配置，无需修改图片加载逻辑。
+
+## 📝 开源协议
+
+本项目基于 MIT 协议开源。欢迎 Star 关注！
+
+
+
+
 
 1. Cloudflare → Rules → Transform Rules → Create rule → Rewrite URL
 2. 设置传入请求匹配表达式(将`<your-domain>`改写为你的域名)：
 ```text
 (http.host eq "<your-domain>" and not starts_with(http.request.uri.path, "/pic") and not ends_with(http.request.uri.path, ".jpg"))
 ```
-3. 设置路径重写(Path Rewrite)方式为Dynamic，写入表达式：
+1. 设置路径重写(Path Rewrite)方式为Dynamic，写入表达式：
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jpg")
 ```

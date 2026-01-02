@@ -1,17 +1,22 @@
-"use client"
-import { useState } from "react"
-import { ImageGallery } from "@/components/image-gallery"
-import { ModeToggle } from "@/components/mode-toggle"
+"use client";
+import { useState } from "react";
+import { ImageGallery } from "@/components/image-gallery";
+import { ModeToggle } from "@/components/mode-toggle";
+
+// 定义一个类型方便管理
+type GalleryCategory = "horizontal" | "vertical" | "gif";
 
 export default function Home() {
-  const [galleryType, setGalleryType] = useState<"horizontal" | "vertical">("horizontal")
+  const [galleryType, setGalleryType] = useState<GalleryCategory>("horizontal");
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-serif font-bold tracking-tight text-balance">SrP-IMG Gallery</h1>
+            <h1 className="text-3xl font-serif font-bold tracking-tight text-balance">
+              SrP-IMG Gallery
+            </h1>
 
             <div className="flex items-center gap-4">
               <div className="flex gap-2 rounded-lg bg-muted p-1">
@@ -35,6 +40,17 @@ export default function Home() {
                 >
                   竖屏
                 </button>
+                {/* 新增 GIF 按钮 */}
+                <button
+                  onClick={() => setGalleryType("gif")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    galleryType === "gif"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  GIF
+                </button>
               </div>
               <ModeToggle />
             </div>
@@ -46,5 +62,5 @@ export default function Home() {
         <ImageGallery key={galleryType} type={galleryType} />
       </main>
     </div>
-  )
+  );
 }

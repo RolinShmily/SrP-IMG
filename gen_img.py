@@ -47,7 +47,7 @@ def process_category(category: str, src_files: list, hash_length: int, out_ext: 
 
     if not src_files:
         print(f"  [{category}] no source images, skipping")
-        return 0, 0
+        return 0, 0, out_ext
 
     print(f"  [{category}] {len(src_files)} source images -> generating {num_files} files")
     src_cycle = cycle(src_files)
@@ -62,13 +62,14 @@ def process_category(category: str, src_files: list, hash_length: int, out_ext: 
                 dst.write_text(f"placeholder for {src.name}\n")
             except Exception:
                 pass
-    return num_files, len(src_files)
+    return num_files, len(src_files), out_ext
 
 
-def build_counts_json(counts: dict, real_counts: dict, hash_length: int, out_ext: str):
+def build_counts_json(counts: dict, real_counts: dict, category_exts: dict, hash_length: int, out_ext: str):
     meta = {
         "counts": counts,
         "real_counts": real_counts,
+        "category_exts": category_exts,
         "hash_length": hash_length,
         "output_ext": out_ext,
         "generated_at": datetime.datetime.utcnow().isoformat() + 'Z'
@@ -181,23 +182,31 @@ def main(argv=None):
 
     counts = {}
     real_counts = {}
+    category_exts = {}
+
     exts = {'.jpg','.jpeg','.png','.gif','.webp'}
     for sd in sorted(subdirs):
         imgs = sorted([f for f in sd.iterdir() if f.is_file() and f.suffix.lower() in exts])
         if not imgs:
             counts[sd.name]=0
             real_counts[sd.name]=0
+            category_exts[sd.name]=ext
             continue
-        num, real_num = process_category(sd.name, imgs, hl, ext, do_copy)
-        counts[sd.name]=num
-        real_counts[sd.name]=real_num
 
-    meta = build_counts_json(counts, real_counts, hl, ext)
-    # generate server-side CF Pages function for UA-based redirects
+        if sd.name in ['h', 'v']:
+            current_category_ext = ext
+        else:
+            current_category_ext = imgs[0].suffix.lower()
+
+        num, real_num, used_ext = process_category(sd.name, imgs, hl, current_category_ext, do_copy)
+
+        counts[sd.name] = num
+        real_counts[sd.name] = real_num
+        category_exts[sd.name] = used_ext
+
+    meta = build_counts_json(counts, real_counts, category_exts, hl, ext)
+
     generate_cf_worker(meta, 'pic.js')
-    # do NOT generate client-side helper or gallery page per user request
-    # generate_cf_redirect(meta, 'pic.client.js')
-    # generate_index_html(meta)
 
 if __name__ == '__main__':
     main()

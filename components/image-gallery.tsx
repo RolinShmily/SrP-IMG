@@ -6,7 +6,7 @@ import { Fancybox } from "@fancyapps/ui"
 import "@fancyapps/ui/dist/fancybox/fancybox.css"
 
 interface ImageGalleryProps {
-  type: "horizontal" | "vertical"
+  type: "horizontal" | "vertical" | "gif" | string;
 }
 
 interface ImageItem {
@@ -31,7 +31,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [fileExt, setFileExt] = useState<string>(".jpg");
 
     const IMAGES_PER_PAGE = 20;
-    
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -45,24 +45,36 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     return 4;
   };
 
+    const typeToFolder: Record<string, string> = {
+    horizontal: "h",
+    vertical: "v",
+    gif: "gif",
+    };
+
+    const folder = typeToFolder[type] || type;
+
   useEffect(() => {
     const fetchMaxCount = async () => {
-        try {
+      try {
         const response = await fetch("/counts.json");
         const data = await response.json();
-
         const displayCounts = data.real_counts || data.counts;
-        const count = type === "horizontal" ? displayCounts.h : displayCounts.v;
+        const count = displayCounts[folder];
 
         setMaxCount(count);
         setHashLength(data.hash_length || 3);
-        setFileExt(data.output_ext || ".jpg");
-        setCountsLoaded(true);
-        } catch (error) {
+
+        if (data.category_exts && data.category_exts[folder]) {
+          setFileExt(data.category_exts[folder]);
+        } else {
+          setFileExt(data.output_ext || ".jpg");
         }
+
+        setCountsLoaded(true);
+      } catch (error) {}
     };
     fetchMaxCount();
-  }, [type]);
+  }, [type, folder]);
 
   const loadImages = useCallback(() => {
     if (loading || !countsLoaded || maxCount === 0) return;
@@ -75,7 +87,6 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     setLoading(true);
 
     const newImages: ImageItem[] = [];
-    const folder = type === "horizontal" ? "h" : "v";
 
     for (let i = startId; i <= endId; i++) {
       const hexName = i.toString(16).padStart(hashLength, "0") + fileExt;
