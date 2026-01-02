@@ -20,7 +20,7 @@ import datetime
 DEFAULT_HASH_LENGTH = 3
 DEFAULT_EXT = ".jpg"
 SOURCE_DIR = Path("oriImg")
-OUTPUT_DIR = Path("dist")
+OUTPUT_DIR = Path("public")
 FUNCTIONS_DIR = Path("functions")
 
 
@@ -79,63 +79,6 @@ def build_counts_json(counts: dict, hash_length: int, out_ext: str, domain: str 
         json.dump(meta, f, ensure_ascii=False, indent=2)
     print(f"Wrote {path}")
     return meta
-
-
-def generate_cf_redirect(meta: dict, out_name: str = 'pic.client.js'):
-    counts = meta.get('counts', {})
-    hl = meta.get('hash_length', DEFAULT_HASH_LENGTH)
-    ext = meta.get('output_ext', DEFAULT_EXT)
-
-    js = []
-    js.append('/* Auto-generated pic.client.js */')
-    js.append(f'const COUNTS = {json.dumps(counts)};')
-    js.append(f'const HASH_LENGTH = {hl};')
-    js.append(f"const OUTPUT_EXT = '{ext}';")
-    js.append('function padHex(n,len){return n.toString(16).padStart(len,"0");}')
-    js.append('function hexName(idx){return padHex(idx,HASH_LENGTH)+OUTPUT_EXT;}')
-    js.append('function isMobile(ua){if(!ua) return false; ua=ua.toLowerCase();return /android|iphone|ipad|ipod|mobile|iemobile|opera mini/.test(ua);}')
-    js.append('function rnd(count){return Math.floor(Math.random()*count);}')
-    js.append('''
-try{
-  var sp=new URLSearchParams(window.location.search);
-  var img=sp.get('img');
-  if(img==='h'||img==='v'){ var c=COUNTS[img]||0; if(c) window.location.href='/' + img + '/' + hexName(rnd(c)); }
-  else if(img==='ua'){ var ua=navigator.userAgent||''; if(isMobile(ua)){ var c=COUNTS['v']||0; if(c) window.location.href='/v/'+hexName(rnd(c)); } else { var c=COUNTS['h']||0; if(c) window.location.href='/h/'+hexName(rnd(c)); } }
-}catch(e){}
-''')
-
-    # write into repository root functions/ so Pages (or wrangler) can pick it up
-    functions_dir = FUNCTIONS_DIR
-    ensure_dir(functions_dir)
-    path = functions_dir / out_name
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(js))
-    print(f"Wrote {path}")
-
-
-def generate_index_html(meta: dict):
-    counts = meta.get('counts', {})
-    hl = meta.get('hash_length', DEFAULT_HASH_LENGTH)
-    ext = meta.get('output_ext', DEFAULT_EXT)
-
-    parts = ['<!doctype html>','<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">','<title>Gallery</title>','<style>body{font-family:sans-serif;padding:20px;background:#f0f2f5}.grid{display:flex;flex-wrap:wrap;gap:10px}.grid-item{width:23%;background:#fff;border-radius:4px;overflow:hidden;min-height:150px}img{width:100%;display:block}</style>','</head><body>','<h1>Gallery</h1>','<div class="grid">']
-
-    for t,c in counts.items():
-        if c==0: continue
-        for i in range(min(c,64)):
-            name = f"{i:0{hl}x}{ext}"
-            url = f"./{t}/{name}"
-            parts.append(f'<div class="grid-item" data-type="{t}"><img src="{url}" alt="{t}-{i}" loading="lazy"></div>')
-
-    parts.append('</div>')
-    parts.append('<script>function filterAll(){document.querySelectorAll(\'.grid-item\').forEach(e=>e.style.display=\'block\');}</script>')
-    parts.append('</body></html>')
-
-    ensure_dir(OUTPUT_DIR)
-    path = OUTPUT_DIR / 'index.html'
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(parts))
-    print(f"Wrote {path}")
 
 
 def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):

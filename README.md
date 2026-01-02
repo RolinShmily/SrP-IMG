@@ -10,14 +10,14 @@
 ## 总体说明 ✅
 
 - 使用 `gen_img.py` 预生成按分类（例如 `h`、`v`）的十六进制命名图片集合。
-- 默认生成路径：`dist/<category>/<hex>.<ext>`（例如 `dist/h/000.jpg`）。
+- 默认生成路径：`public/<category>/<hex>.<ext>`（例如 `public/h/000.jpg`）。
 - 开发时使用 `--no-copy` 生成占位文件以加快本地迭代；生产使用 `--hash-length 3`（16³ = 4096）以覆盖随机空间。 🛠️
 
 ## 仓库结构（简要） 📁
 
 ```text
 ├── oriImg/           # 原始素材（每个子目录为一个分类，如 h/ v/）
-├── dist/             # 构建产物（部署此目录）
+├── public/             # 构建产物（部署此目录）
 │   ├── h/            # 横屏图片（hex 命名）
 │   ├── v/            # 竖屏图片（hex 命名）
 │   └── counts.json   # 构建时生成的元数据
@@ -59,7 +59,7 @@ oriImg/
 ```
 
 - 把你自己的图片上传到相应的分类目录（支持 `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` 等常见格式）。
-- 命名不限：构建脚本会按循环分配并生成十六进制命名的输出文件到 `dist/`。
+- 命名不限：构建脚本会按循环分配并生成十六进制命名的输出文件到 `public/`。
 
 ### 构建命令
 
@@ -67,11 +67,13 @@ oriImg/
 # 占位符生成（开发） 🧪
 python gen_img.py --no-copy --hash-length 3
 
-# 生产构建：复制真实图片到 dist/ 🚀
+# 生产构建：复制真实图片到 public/ 🚀
 python gen_img.py --hash-length 3
 ```
 
-这样 `gen_img.py` 会把素材扩充为 `dist/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `dist/counts.json`，可直接部署到 Pages。
+输出文件夹: `/public`
+
+这样 `gen_img.py` 会把素材扩充为 `public/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `public/counts.json`，可直接部署到 Pages。
 
 **注**：
 - `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。
@@ -93,5 +95,5 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jp
 
 **注意**：如果你的构建命令中`--hash-length`值为`2`,那么这里`cf.random_seed`的随机范围右边界也要从`3`改为`2`。
 
-规则编写完成后，当访问 `https://<your-domain>/<category>`时，Cloudflare 内部重写为 `dist/<category>/<hex>.<ext>`，并返回其内容而URL不变。
+规则编写完成后，当访问 `https://<your-domain>/<category>`时，Cloudflare 内部重写为 `public/<category>/<hex>.<ext>`，并返回其内容而URL不变。
 
