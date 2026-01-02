@@ -3,8 +3,11 @@
     "h": 256,
     "v": 256
   },
+  "real_counts": {
+    "h": 11,
+    "v": 5
+  },
   "hash_length": 2,
   "output_ext": ".jpg",
-  "domain": "",
-  "generated_at": "2026-01-02T09:17:46.162032Z"
+  "generated_at": "2026-01-02T14:45:50.253253Z"
 }

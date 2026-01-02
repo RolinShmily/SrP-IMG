@@ -77,7 +77,7 @@ python gen_img.py --hash-length 3
 
 **注**：
 - `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。
-- `--hash-length`的参数可以为`1`、`2`、`3`...，分别对应`16`、`256`、`4096`...个输出值。
+- `--hash-length`的参数可以为`2`或者`3`，分别对应`256`或者`4096`个输出值。
 
 ## (可选) Cloudflare Transform Rules 🔁
 
