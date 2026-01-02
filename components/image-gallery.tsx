@@ -20,6 +20,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [loading, setLoading] = useState(false);
   const [maxCount, setMaxCount] = useState<number>(0);
   const [countsLoaded, setCountsLoaded] = useState(false);
+
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
@@ -29,7 +30,12 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [hashLength, setHashLength] = useState<number>(3);
   const [fileExt, setFileExt] = useState<string>(".jpg");
 
-  const IMAGES_PER_PAGE = 20;
+    const IMAGES_PER_PAGE = 20;
+    
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getColumnCount = () => {
     if (typeof window === "undefined") return 3;
@@ -165,7 +171,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   }, [images]);
 
   const renderMasonryLayout = () => {
-    const columnCount = getColumnCount();
+    const columnCount = mounted ? getColumnCount() : 3;
     const columns: ImageItem[][] = Array.from(
       { length: columnCount },
       () => []
