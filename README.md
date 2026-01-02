@@ -1,17 +1,19 @@
 # SrP-IMG — 随机图片API 🖼️
 
-一个基于Cloudflare Pages 和 Transform Rules，提供两种图片获取方式的**无限流量**、**零成本**、**多分类**随机图片API。
+一个基于Cloudflare Pages 和 Transform Rules，提供两种图片获取方式和画廊展示界面的**无限流量**、**零成本**、**多分类**随机图片API。
 
 灵感来源：
 
 - [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)
 - [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)
+- [v0-gallery-website](https://github.com/afoim/v0-gallery-website)
 
 ## 总体说明 ✅
 
 - 使用 `gen_img.py` 预生成按分类（例如 `h`、`v`）的十六进制命名图片集合。
 - 默认生成路径：`public/<category>/<hex>.<ext>`（例如 `public/h/000.jpg`）。
 - 开发时使用 `--no-copy` 生成占位文件以加快本地迭代；生产使用 `--hash-length 3`（16³ = 4096）以覆盖随机空间。 🛠️
+- 随后通过`Next.js 14+`的`npm run build`构建出画廊页面，此时会将`public`下的所有文件复制进输出文件夹`out`。
 
 ## 仓库结构（简要） 📁
 
@@ -65,15 +67,11 @@ oriImg/
 
 ```powershell
 # 占位符生成（开发） 🧪
-python gen_img.py --no-copy --hash-length 3
+python gen_img.py --no-copy --hash-length 2 && npm run dev
 
 # 生产构建：复制真实图片到 public/ 🚀
-python gen_img.py --hash-length 3
+python gen_img.py --hash-length 2 && npm run build
 ```
-
-输出文件夹: `/public`
-
-这样 `gen_img.py` 会把素材扩充为 `public/<category>/<hex>.<ext>` 并生成 `functions/pic.js` 与 `public/counts.json`，可直接部署到 Pages。
 
 **注**：
 - `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。

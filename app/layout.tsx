@@ -11,8 +11,8 @@ const siteAvatarUrl = "https://q1.qlogo.cn/g?b=qq&nk=1608219667&s=640";
 
 export const metadata: Metadata = {
   title: 'SrP-IMG Gallery',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  description: '一个图片画廊',
+  generator: 'Next.js',
   icons: {
     icon: siteAvatarUrl,
     shortcut: siteAvatarUrl,
