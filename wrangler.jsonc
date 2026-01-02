@@ -1,8 +1,14 @@
 {
     "name": "cf-rule-random-url",
     "compatibility_date": "2025-08-11",
+    "pages_build_output_dir": ".next/static",
     "assets": {
-      "directory": "./"
+      "directory": "./public"
+    },
+    "functions": {
+      "**/*": {
+        "compatibility_date": "2025-08-11"
+      }
     }
   }
   
