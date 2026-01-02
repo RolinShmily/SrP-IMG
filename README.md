@@ -139,20 +139,6 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 本项目基于 MIT 协议开源。欢迎 Star 关注！
 
 
+## ToDO
 
-
-
-1. Cloudflare → Rules → Transform Rules → Create rule → Rewrite URL
-2. 设置传入请求匹配表达式(将`<your-domain>`改写为你的域名)：
-```text
-(http.host eq "<your-domain>" and not starts_with(http.request.uri.path, "/pic") and not ends_with(http.request.uri.path, ".jpg"))
-```
-1. 设置路径重写(Path Rewrite)方式为Dynamic，写入表达式：
-```text
-concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jpg")
-```
-
-**注意**：如果你的构建命令中`--hash-length`值为`2`,那么这里`cf.random_seed`的随机范围右边界也要从`3`改为`2`。
-
-规则编写完成后，当访问 `https://<your-domain>/<category>`时，Cloudflare 内部重写为 `public/<category>/<hex>.<ext>`，并返回其内容而URL不变。
-
+- [ ] 添加文件大小检测机制
