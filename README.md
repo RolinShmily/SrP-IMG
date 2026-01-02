@@ -65,13 +65,18 @@ oriImg/
 
 ### 构建命令
 
+开发测试：占位符生成 🧪 (分步执行)
 ```powershell
-# 占位符生成（开发） 🧪
-python gen_img.py --no-copy --hash-length 2 && npm run dev
-
-# 生产构建：复制真实图片到 public/ 🚀
-python gen_img.py --hash-length 2 && npm run build
+python gen_img.py --no-copy --hash-length 2
+npm run dev
 ```
+
+CI(CloudflarePages)生产构建：复制真实图片到 public/ 🚀
+```
+python3 gen_img.py --hash-length 2 && npm run build
+```
+
+构建输出文件夹为:`/out/`
 
 **注**：
 - `python`版本推荐为`3.8+`;在CI中的python需要指定版本，即将构建命令中的`python`改为`python3`。
