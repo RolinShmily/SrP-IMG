@@ -1,0 +1,78 @@
+<!doctype html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Gallery</title>
+        <style>
+            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;margin:0;padding:20px;background:#f0f2f5}
+            h1{text-align:center;color:#333;margin-bottom:20px}
+            .filter-nav{text-align:center;margin-bottom:30px}
+            .filter-btn{background:#fff;border:1px solid #ddd;padding:8px 16px;margin:0 5px;border-radius:20px;cursor:pointer;font-size:14px;color:#555}
+            .filter-btn.active{background:#007bff;color:#fff;border-color:#007bff}
+            .grid{margin:0 auto}
+            .grid-sizer,.grid-item{width:23%;margin-bottom:10px}
+            .grid-item{float:left;background:#fff;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);min-height:150px;background-color:#eee;transition:background-color 0.3s}
+            .grid-item.content-loaded{min-height:0;background-color:#fff}
+            .grid-item img{display:block;width:100%;height:auto;opacity:0;transition:opacity 0.4s}
+            .grid-item img[data-loaded="true"]{opacity:1}
+            @media (max-width:1200px){.grid-sizer,.grid-item{width:31%}}
+            @media (max-width:800px){.grid-sizer,.grid-item{width:48%}}
+            @media (max-width:500px){.grid-sizer,.grid-item{width:100%}}
+        </style>
+    </head>
+    <body>
+        <h1>Static Image Gallery</h1>
+        <div class="filter-nav"><button class="filter-btn active" onclick="filterGallery('all')">All</button><button class="filter-btn" onclick="filterGallery('h')">H</button><button class="filter-btn" onclick="filterGallery('v')">V</button>
+<section id="section-h" class="gallery-section">
+  <h2>Folder: h</h2>
+  <div class="grid" id="grid-h">
+    <div class="grid-sizer"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/000.jpg" alt="h-0"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/001.jpg" alt="h-1"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/002.jpg" alt="h-2"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/003.jpg" alt="h-3"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/004.jpg" alt="h-4"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/005.jpg" alt="h-5"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/006.jpg" alt="h-6"></div>
+    <div class="grid-item"><img class="lozad" data-src="./h/007.jpg" alt="h-7"></div>
+  </div>
+</section>
+
+<section id="section-v" class="gallery-section">
+  <h2>Folder: v</h2>
+  <div class="grid" id="grid-v">
+    <div class="grid-sizer"></div>
+    <div class="grid-item"><img class="lozad" data-src="./v/000.jpg" alt="v-0"></div>
+    <div class="grid-item"><img class="lozad" data-src="./v/001.jpg" alt="v-1"></div>
+    <div class="grid-item"><img class="lozad" data-src="./v/002.jpg" alt="v-2"></div>
+    <div class="grid-item"><img class="lozad" data-src="./v/003.jpg" alt="v-3"></div>
+    <div class="grid-item"><img class="lozad" data-src="./v/004.jpg" alt="v-4"></div>
+  </div>
+</section>
+
+        </div>
+        <!-- libs via CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/imagesloaded@4.1.4/imagesloaded.pkgd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lozad@1.16.0/dist/lozad.min.js"></script>
+        <script>
+            var masonryInstances = [];
+            document.addEventListener('DOMContentLoaded', function(){
+                var grids = document.querySelectorAll('.grid');
+                grids.forEach(function(grid){
+                    var msnry = new Masonry(grid,{ itemSelector: '.grid-item', columnWidth: '.grid-sizer', percentPosition: true, gutter: 15 });
+                    masonryInstances.push(msnry);
+                });
+                const observer = lozad('.lozad',{ rootMargin: '200px 0px', threshold: 0, loaded: function(el){
+                    const onImgLoad = function(){ el.setAttribute('data-loaded','true'); el.closest('.grid-item').classList.add('content-loaded'); masonryInstances.forEach(msnry=>msnry.layout()); };
+                    if (el.complete && el.naturalHeight !== 0) onImgLoad(); else el.onload = onImgLoad; }
+                });
+                observer.observe();
+                setTimeout(()=>{ masonryInstances.forEach(msnry=>msnry.layout()); },100);
+            });
+            function filterGallery(type){ document.querySelectorAll('.filter-btn').forEach(btn=>btn.classList.remove('active')); event.target.classList.add('active'); document.querySelectorAll('.gallery-section').forEach(sec=>{ if(type==='all' || sec.id==='section-'+type) sec.style.display='block'; else sec.style.display='none'; }); setTimeout(()=>{ masonryInstances.forEach(msnry=>msnry.layout()); },10); }
+        </script>
+    </body>
+    </html>
+    
