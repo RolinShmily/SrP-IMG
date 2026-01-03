@@ -46,7 +46,6 @@
 # 使用 --no-copy 快速生成虚拟文件进行测试
 python gen_img.py --no-copy --hash-length 2
 npm run dev
-
 ```
 
 ### 3. Cloudflare Pages 生产构建
@@ -57,7 +56,6 @@ npm run dev
 * **构建命令**：
 ```bash
 python3 gen_img.py --hash-length 3 && npm run build
-
 ```
 
 * **输出目录**：`out`
@@ -92,7 +90,7 @@ python3 gen_img.py --hash-length 3 && npm run build
 URL重写规则一：
 1. **匹配表达式**：
 ```text
-(http.host eq "<your-domain>" and not starts_with(http.request.uri.path, "/pic") and not starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".jpg"))
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
 ```
 2. 路径**重写至 (Dynamic)**：
 ```text
@@ -102,7 +100,7 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jp
 URL重写规则二：
 1. **匹配表达式**：
 ```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif"))
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
 ```
 2. 路径**重写至 (Dynamic)**：
 ```text
@@ -117,14 +115,47 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 脚本执行时会进行以下操作：
 
-1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成  个访问路径。
+1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成$16^3$个访问路径。
 2. **后缀策略**：
 * 检查 `oriImg` 下每个子目录。
 * 若目录名为 `h` 或 `v`，输出后缀强制遵循命令行参数（默认 `.jpg`）。
 * 否则，自动探测该目录首张图片后缀。
-
-
 3. **元数据导出**：生成 `counts.json`，记录每个分类的图片总数 (`counts`) 和对应后缀 (`category_exts`)。
+
+# 📦 存储与容量管理 (关键说明)
+
+由于 Cloudflare Pages 及其他 CI/CD 平台对单次构建的文件总数和总体积有严格限制，本项目引入了**体积熔断机制**。
+
+### 1. 文件体积限制
+
+* **5MB 阈值**：构建脚本 `gen_img.py` 会在扫描阶段检查每个源文件。
+* **策略**：任何单文件体积超过 **5MB** 的图片将被直接忽略。它们不会被拷贝，也不会参与哈希迭代。
+* **原因**：防止超大 GIF 或高分辨率素材在迭代（如 $16^3 = 4096$ 倍）后瞬间撑爆磁盘空间。
+
+---
+
+### 2. 容量计算公式
+
+在配置 `--hash-length` 时，请参考以下公式评估预期的磁盘占用：
+
+$$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
+
+* $S_{total}$：构建后的总磁盘占用。
+* $L$：命令行指定的 `hash-length`（默认 3）。
+* $\bar{S}_c$：分类 $c$ 中**所有合规图片 ($\le$ 5MB)** 的平均体积。
+* $n$：分类文件夹的总数。
+
+> **示例计算**：若 `h` 分类有 10 张图，平均每张 500KB，`hash-length` 为 3：占用空间 $= 16^3 \times 500\text{KB} = 4096 \times 0.5\text{MB} \approx 2\text{GB}$。
+
+---
+
+### 3. 最佳实践建议
+
+- 这里推荐一个好用的批量压缩工具: [Caesium Image Compressor](https://saerasoft.com/caesium/)
+
+* **预先压缩**：建议在放入 `oriImg` 之前，使用工具（如 TinyPNG 或 FFmpeg）将图片/GIF 压缩至 2MB 以内。
+* **动态调整**：如果你的图片库非常大，请将 `--hash-length` 设为 `2`（生成 256 张/分类），以确保部署成功率。
+* **查看日志**：在 Cloudflare 构建日志中，脚本会明确提示：`[分类名] 忽略了 X 个超过 5.0MB 的文件`。
 
 ### 关于画廊映射表
 
@@ -137,8 +168,3 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 ## 📝 开源协议
 
 本项目基于 MIT 协议开源。欢迎 Star 关注！
-
-
-## ToDO
-
-- [ ] 添加文件大小检测机制
