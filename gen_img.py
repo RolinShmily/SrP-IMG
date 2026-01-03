@@ -22,6 +22,7 @@ DEFAULT_EXT = ".jpg"
 SOURCE_DIR = Path("oriImg")
 OUTPUT_DIR = Path("public")
 FUNCTIONS_DIR = Path("functions")
+SIZE_LIMIT_MB = 5.0
 
 
 def ensure_dir(p: Path):
@@ -40,17 +41,27 @@ def clear_dir_files(p: Path):
 
 
 def process_category(category: str, src_files: list, hash_length: int, out_ext: str, do_copy: bool):
+
+    valid_files = [
+        f for f in src_files
+        if f.stat().st_size / (1024 * 1024) <= SIZE_LIMIT_MB
+    ]
+
+    ignored_count = len(src_files) - len(valid_files)
+    if ignored_count > 0:
+        print(f"  [{category}] 忽略了 {ignored_count} 个超过 {SIZE_LIMIT_MB}MB 的文件")
+
     num_files = 16 ** hash_length
     out_dir = OUTPUT_DIR / category
     ensure_dir(out_dir)
     clear_dir_files(out_dir)
 
-    if not src_files:
-        print(f"  [{category}] no source images, skipping")
+    if not valid_files:
+        print(f"  [{category}] no valid source images (<=5MB), skipping")
         return 0, 0, out_ext
 
-    print(f"  [{category}] {len(src_files)} source images -> generating {num_files} files")
-    src_cycle = cycle(src_files)
+    print(f"  [{category}] {len(valid_files)} valid source images -> generating {num_files} files")
+    src_cycle = cycle(valid_files)
     for i in range(num_files):
         src = next(src_cycle)
         name = f"{i:0{hash_length}x}{out_ext}"
@@ -62,7 +73,7 @@ def process_category(category: str, src_files: list, hash_length: int, out_ext: 
                 dst.write_text(f"placeholder for {src.name}\n")
             except Exception:
                 pass
-    return num_files, len(src_files), out_ext
+    return num_files, len(valid_files), out_ext
 
 
 def build_counts_json(counts: dict, real_counts: dict, category_exts: dict, hash_length: int, out_ext: str):
@@ -187,7 +198,13 @@ def main(argv=None):
     exts = {'.jpg','.jpeg','.png','.gif','.webp'}
     for sd in sorted(subdirs):
         imgs = sorted([f for f in sd.iterdir() if f.is_file() and f.suffix.lower() in exts])
-        if not imgs:
+
+        valid_imgs = [
+            f for f in imgs
+            if f.stat().st_size / (1024 * 1024) <= SIZE_LIMIT_MB
+        ]
+
+        if not valid_imgs:
             counts[sd.name]=0
             real_counts[sd.name]=0
             category_exts[sd.name]=ext
@@ -196,7 +213,7 @@ def main(argv=None):
         if sd.name in ['h', 'v']:
             current_category_ext = ext
         else:
-            current_category_ext = imgs[0].suffix.lower()
+            current_category_ext = valid_imgs[0].suffix.lower()
 
         num, real_num, used_ext = process_category(sd.name, imgs, hl, current_category_ext, do_copy)
 
