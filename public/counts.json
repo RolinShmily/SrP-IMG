@@ -1,16 +1,16 @@
 {
   "counts": {
-    "gif": 256,
+    "gif": 0,
     "h": 256,
     "v": 256
   },
   "real_counts": {
-    "gif": 5,
+    "gif": 0,
     "h": 11,
     "v": 5
   },
   "category_exts": {
-    "gif": ".gif",
+    "gif": ".jpg",
     "h": ".jpg",
     "v": ".jpg"
   },
