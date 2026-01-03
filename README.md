@@ -92,7 +92,7 @@ python3 gen_img.py --hash-length 3 && npm run build
 URL重写规则一：
 1. **匹配表达式**：
 ```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and starts_with(http.request.uri.path, "/v"))
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
 ```
 2. 路径**重写至 (Dynamic)**：
 ```text
