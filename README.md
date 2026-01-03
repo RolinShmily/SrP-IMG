@@ -102,7 +102,7 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jp
 URL重写规则二：
 1. **匹配表达式**：
 ```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif"))
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
 ```
 2. 路径**重写至 (Dynamic)**：
 ```text
