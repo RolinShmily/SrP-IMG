@@ -68,7 +68,7 @@ python3 gen_img.py --hash-length 2 && npm run build
   "compatibility_date": "2026-01-05",       // 部署日期
   "compatibility_flags": ["nodejs_compat"], // NodeJs兼容性
   "assets": {
-    "directory": "/out"                     // 静态构建输出目录
+    "directory": "./out"                     // 静态构建输出目录
   }
 }
 ```
