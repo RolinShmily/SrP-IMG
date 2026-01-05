@@ -70,6 +70,7 @@ python3 gen_img.py --hash-length 2 && npm run build
   "compatibility_flags": ["nodejs_compat"]  // 配置nodeJS兼容
 }
 ```
+部署命令: `npx wrangler pages deploy out`
 ## 🔗 使用方式
 
 ### 方式 A：服务端 API (JS 重定向)
