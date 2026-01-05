@@ -1,10 +1,10 @@
 # SrP-IMG — 全功能随机图片 API & 画廊 🖼️
 
-一个基于 Cloudflare Pages 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
+一个基于 Cloudflare Pages/Workers 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
 
 ### 核心亮点 ✨
 
-* **零成本方案**：完全托管于 Cloudflare Pages，无需服务器，无需数据库。
+* **零成本方案**：完全托管于 Cloudflare Pages/Workers，无需服务器，无需数据库。
 * **智能多分类**：支持 `h` (横屏)、`v` (竖屏) 以及自定义分类（如 `gif`、`wallpaper`）。
 * **动态后缀支持**：`h/v` 固定为 `.jpg` 确保 API 兼容性，其他分类自动侦测原图后缀（如 `.gif`, `.png`）。
 * **自动化画廊**：前端画廊通过读取 `counts.json` 自动适配分类、数量和文件格式，无需手动修改代码。
@@ -48,19 +48,28 @@ python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
 
-### 3. Cloudflare Pages 生产构建
+### 3. Cloudflare Pages/Workers 生产构建
 
 在 Cloudflare 仪表板配置如下：
 
 * **框架预设**：`Next.js`
 * **构建命令**：
 ```bash
-python3 gen_img.py --hash-length 3 && npm run build
+python3 gen_img.py --hash-length 2 && npm run build
 ```
 
 * **输出目录**：`out`
 * **环境变量**：确保 Python 环境为 3.8+
 
+如果使用 Cloudflare Workers,则需要配置根目录的`wrangler.jsonc`:
+```json
+{
+  "name": "worker-name",                    // 部署的Worker名称
+  "compatibility_date": "2026-01-05",       // 部署日期
+  "pages_build_output_dir": "out",          // 静态构建目录
+  "compatibility_flags": ["nodejs_compat"]  // 配置nodeJS兼容
+}
+```
 ## 🔗 使用方式
 
 ### 方式 A：服务端 API (JS 重定向)
