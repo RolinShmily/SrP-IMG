@@ -55,7 +55,7 @@ npm run dev
 * **框架预设**：`Next.js`
 * **构建命令**：
 ```bash
-python3 gen_img.py --hash-length 3 && npm run build
+python3 gen_img.py --hash-length 2 && npm run build
 ```
 
 * **输出目录**：`out`
