@@ -64,13 +64,15 @@ python3 gen_img.py --hash-length 2 && npm run build
 如果使用 Cloudflare Workers,则需要配置根目录的`wrangler.jsonc`:
 ```json
 {
-  "name": "worker-name",                    // 部署的Worker名称
+  "name": "srp-img-worker",                 // 部署的Worker名称
   "compatibility_date": "2026-01-05",       // 部署日期
-  "pages_build_output_dir": "out",          // 静态构建目录
-  "compatibility_flags": ["nodejs_compat"]  // 配置nodeJS兼容
+  "compatibility_flags": ["nodejs_compat"], // NodeJs兼容性
+  "assets": {
+    "directory": "/out"                     // 静态构建输出目录
+  }
 }
 ```
-部署命令: `npx wrangler pages deploy out`
+部署命令: `npx wrangler deploy`
 ## 🔗 使用方式
 
 ### 方式 A：服务端 API (JS 重定向)
