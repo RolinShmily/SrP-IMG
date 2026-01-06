@@ -25,6 +25,7 @@
 ├── components/       # Next.js 组件
 │   └── image-gallery.tsx # 核心画廊组件（映射表逻辑）
 ├── gen_img.py        # 构建大脑：处理图片命名、后缀识别及生成元数据
+├── index.js          # Cloudflare Workers 入口
 └── README.md
 
 ```
@@ -50,7 +51,7 @@ npm run dev
 
 ### 3. Cloudflare Pages/Workers 生产构建
 
-在 Cloudflare 仪表板配置如下：
+在 Cloudflare Pages 仪表板配置如下：
 
 * **框架预设**：`Next.js`
 * **构建命令**：
@@ -64,14 +65,17 @@ python3 gen_img.py --hash-length 2 && npm run build
 如果使用 Cloudflare Workers,则需要配置根目录的`wrangler.jsonc`:
 ```json
 {
-  "name": "srp-img-worker",                 // 部署的Worker名称
-  "compatibility_date": "2026-01-05",       // 部署日期
-  "compatibility_flags": ["nodejs_compat"], // NodeJs兼容性
+  "name": "srp-img-worker",
+  "main": "index.js",
+  "compatibility_date": "2026-01-05",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "directory": "./out"                     // 静态构建输出目录
+    "directory": "./out",
+    "binding": "ASSETS"
   }
 }
 ```
+注意：请将`name`改为你要部署的Worker名称;将`compatibility_date`改为你的部署日期。
 部署命令: `npx wrangler deploy`
 ## 🔗 使用方式
 

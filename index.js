@@ -50,7 +50,14 @@ async function handleRequest(request) {
     }
 }
 
+export default {
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
 
-export function onRequest(context) {
-    return handleRequest(context.request);
-}
+        if (url.pathname === '/pic' || url.pathname === '/api/pic') {
+            return handleRequest(request);
+        }
+
+        return env.ASSETS.fetch(request);
+    }
+};
