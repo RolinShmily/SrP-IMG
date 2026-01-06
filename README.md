@@ -32,6 +32,12 @@
 
 ## 🚀 部署指南
 
+⚠️ 注意:
+- 这里的CI并不局限于Cloudflare，只是如果想通过重写URL访问随机图，需要用到Cloudflare Rules；
+- 目前已经在EdgeOne平台以 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支部署了Pages，可正常通过 `https://example.com/pic?img=ua` 访问随机图片。
+- 各家CI平台的构建内存可能有大有小。虽然py脚本中已经做出限制，但在EdgeOne中，仍要做出让步，可以前往 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支对比`oriImg`文件夹。
+- 总的来说还是推荐Cloudflare部署，但需要自行解决**CDN减速器**问题。
+
 ### 1. 素材准备
 
 在根目录 `oriImg/` 下创建分类文件夹。
