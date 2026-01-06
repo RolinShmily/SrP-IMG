@@ -94,8 +94,7 @@ def build_counts_json(counts: dict, real_counts: dict, category_exts: dict, hash
 
 
 def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
-    """Generate a server-side Cloudflare Pages Function / Worker that performs UA-based 302 redirects.
-    The function exports onRequest(context) to be compatible with EdgeOne/Pages function style used in this repo.
+    """Generate a server-side Cloudflare Pages Function / Worker and a Next.js API route that performs UA-based 302 redirects.
     """
     counts = meta.get('counts', {})
     h_count = counts.get('h', 0)
@@ -103,13 +102,7 @@ def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
     hl = meta.get('hash_length', DEFAULT_HASH_LENGTH)
     ext = meta.get('output_ext', DEFAULT_EXT)
 
-    # Build worker code (ES module style with exported onRequest)
-    code = f"""
-// Auto-generated Cloudflare Pages Function (server-side)
-export function onRequest(context) {{
-    return handleRequest(context.request);
-}}
-
+    core_logic = f"""
 function isMobileDevice(ua) {{
     if(!ua) return false;
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua.toLowerCase());
@@ -152,8 +145,7 @@ async function handleRequest(request) {{
             }}
         }}
 
-        // Help text when no img param
-        const help = `🖼️ 随机图片展示器\n\n使用方法:\n• ?img=h - 获取横屏随机图片\n• ?img=v - 获取竖屏随机图片\n• ?img=ua - 根据设备类型自动选择图片\n`;
+        const help = `🖼️ 随机图片展示器\\n\\n使用方法:\\n• ?img=h - 获取横屏随机图片\\n• ?img=v - 获取竖屏随机图片\\n• ?img=ua - 根据设备类型自动选择图片\\n`;
         return new Response(help, {{status:200, headers: {{ 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' }}}});
 
     }} catch(err) {{
@@ -162,13 +154,36 @@ async function handleRequest(request) {{
 }}
 """
 
-    # write server-side function into repository root `functions/` for Pages/Wrangler
-    functions_dir = FUNCTIONS_DIR
-    ensure_dir(functions_dir)
-    path = functions_dir / out_name
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(code)
-    print(f"Wrote {path} (server-side CF Pages Function)")
+    code_functions = f"""
+{core_logic}
+
+export function onRequest(context) {{
+    return handleRequest(context.request);
+}}
+"""
+
+    code_index_worker = f"""
+{core_logic}
+export default {{
+    async fetch(request, env, ctx) {{
+        const url = new URL(request.url);
+
+        if (url.pathname === '/pic' || url.pathname === '/api/pic') {{
+            return handleRequest(request);
+        }}
+
+        return env.ASSETS.fetch(request);
+    }}
+}};
+"""
+
+    ensure_dir(FUNCTIONS_DIR)
+    with open(FUNCTIONS_DIR / out_name, 'w', encoding='utf-8') as f:
+        f.write(code_functions)
+    with open('index.js', 'w', encoding='utf-8') as f:
+        f.write(code_index_worker)
+    print(f"Generated: {FUNCTIONS_DIR / out_name} (Pages Function)")
+    print(f"Generated: index.js (Workers entry for Assets mode)")
 
 
 def main(argv=None):

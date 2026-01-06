@@ -1,6 +1,10 @@
 {
   "name": "srp-img-worker",
+  "main": "index.js",
   "compatibility_date": "2026-01-05",
-  "pages_build_output_dir": "out",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS"
+  }
 }
