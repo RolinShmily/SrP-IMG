@@ -194,3 +194,9 @@ $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
 ## 📝 开源协议
 
 本项目基于 MIT 协议开源。欢迎 Star 关注！
+
+## 🙏灵感来源
+
+- [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)
+- [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)
+- [v0-gallery-website](https://github.com/afoim/v0-gallery-website)
