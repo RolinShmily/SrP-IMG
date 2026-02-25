@@ -29,6 +29,9 @@
 └── README.md
 
 ```
+## 🎨 前端预览
+
+![preview](preview.png)
 
 ## 🚀 部署指南
 
