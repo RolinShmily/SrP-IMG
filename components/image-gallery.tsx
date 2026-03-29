@@ -60,6 +60,25 @@ export function ImageGallery({ type }: ImageGalleryProps) {
 
     const folder = typeToFolder[type] || type;
 
+    // 根据类型设置不同的宽高比
+    const getImageDimensions = () => {
+      switch (type) {
+        case "horizontal": // 横屏 4:3
+          return { width: 800, height: 600, aspectRatio: "4/3" };
+        case "vertical": // 竖屏 9:16
+          return { width: 450, height: 800, aspectRatio: "9/16" };
+        case "avatar": // 头像 1:1
+          return { width: 800, height: 800, aspectRatio: "1/1" };
+        case "gif":
+        default: // GIF 不限制比例，只限制最大尺寸
+          return { width: 1000, height: 1000, aspectRatio: undefined };
+      }
+    };
+
+
+    const { width: imgWidth, height: imgHeight, aspectRatio } = getImageDimensions();
+
+
   useEffect(() => {
     const fetchMaxCount = async () => {
       try {
@@ -255,9 +274,10 @@ export function ImageGallery({ type }: ImageGalleryProps) {
                     <Image
                       src={image.url || "/placeholder.svg"}
                       alt={`Gallery image ${image.id}`}
-                      width={800}
-                      height={600}
-                      className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+                      width={imgWidth}
+                      height={imgHeight}
+                      className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${type === "gif" ? "h-auto" : "h-auto"}`}
+                      style={aspectRatio ? { aspectRatio } : undefined}
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       loading={image.id < IMAGES_PER_PAGE ? "eager" : "lazy"}
                       priority={image.id < 8}
