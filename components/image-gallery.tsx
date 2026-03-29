@@ -6,7 +6,7 @@ import { Fancybox } from "@fancyapps/ui"
 import "@fancyapps/ui/dist/fancybox/fancybox.css"
 
 interface ImageGalleryProps {
-  type: "horizontal" | "vertical" | "gif" | string;
+  type: "horizontal" | "vertical" | "avatar" | "gif" | string;
 }
 
 interface ImageItem {
@@ -54,6 +54,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     const typeToFolder: Record<string, string> = {
     horizontal: "h",
     vertical: "v",
+    avatar: "a",
     gif: "gif",
     };
 

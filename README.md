@@ -114,7 +114,7 @@ python3 gen_img.py --hash-length 2 && npm run build
 
 - 请将下列表达式中`<your-domain>`换成你的域名
 
-URL重写规则一：
+URL重写规则一（横竖屏分类）：
 1. **匹配表达式**：
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
@@ -124,7 +124,17 @@ URL重写规则一：
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 ```
 
-URL重写规则二：
+URL重写规则二（头像分类）：
+1. **匹配表达式**：
+```text
+(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/a") and not ends_with(http.request.uri.path, ".jpeg"))
+```
+2. 路径**重写至 (Dynamic)**：
+```text
+concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
+```
+
+URL重写规则三（GIF分类）：
 1. **匹配表达式**：
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))

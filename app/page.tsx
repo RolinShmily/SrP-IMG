@@ -4,7 +4,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { ModeToggle } from "@/components/mode-toggle";
 
 // 定义一个类型方便管理
-type GalleryCategory = "horizontal" | "vertical" | "gif";
+type GalleryCategory = "horizontal" | "vertical" | "avatar" | "gif";
 
 export default function Home() {
   const [galleryType, setGalleryType] = useState<GalleryCategory>("horizontal");
@@ -39,6 +39,17 @@ export default function Home() {
                   }`}
                 >
                   竖屏
+                </button>
+                {/* 新增头像按钮 */}
+                <button
+                  onClick={() => setGalleryType("avatar")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    galleryType === "avatar"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  头像
                 </button>
                 {/* 新增 GIF 按钮 */}
                 <button
