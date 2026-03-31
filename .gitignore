@@ -28,4 +28,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+public/a/*
+public/h/*
+public/v/*
+public/gif/*
+
 __pycache__
