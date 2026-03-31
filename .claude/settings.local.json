@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b \"D:\\\\desktop\\\\RoL1n\\\\gh_pjc\\\\SrP-IMG\\\\oriImg\\\\v\")",
+      "Bash(dir:*)",
+      "Bash(powershell -Command:*)"
+    ]
+  }
+}

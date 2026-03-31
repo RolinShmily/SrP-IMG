@@ -227,6 +227,10 @@ def main(argv=None):
 
         if sd.name in ['h', 'v']:
             current_category_ext = ext
+        elif sd.name in ['gif']:
+            current_category_ext = '.gif'
+        elif sd.name in ['a']:
+            current_category_ext = '.jpeg'
         else:
             current_category_ext = valid_imgs[0].suffix.lower()
 

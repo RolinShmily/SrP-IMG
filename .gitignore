@@ -22,8 +22,15 @@ yarn-error.log*
 # vercel
 .vercel
 
+.claude
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+public/a/*
+public/h/*
+public/v/*
+public/gif/*
 
 __pycache__

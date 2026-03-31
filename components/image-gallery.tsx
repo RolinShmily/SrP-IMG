@@ -6,12 +6,14 @@ import { Fancybox } from "@fancyapps/ui"
 import "@fancyapps/ui/dist/fancybox/fancybox.css"
 
 interface ImageGalleryProps {
-  type: "horizontal" | "vertical" | "gif" | string;
+  type: "horizontal" | "vertical" | "avatar" | "gif" | string;
 }
 
 interface ImageItem {
   id: number
   url: string
+  error?: boolean
+  loaded?: boolean
 }
 
 export function ImageGallery({ type }: ImageGalleryProps) {
@@ -20,12 +22,17 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [loading, setLoading] = useState(false);
   const [maxCount, setMaxCount] = useState<number>(0);
   const [countsLoaded, setCountsLoaded] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [imageLoaded, setImageLoaded] = useState<Set<number>>(new Set());
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const animateObserverRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const galleryContainerRef = useRef<HTMLDivElement>(null);
+  const loadImagesRef = useRef<(() => void) | null>(null);
 
   const [hashLength, setHashLength] = useState<number>(3);
   const [fileExt, setFileExt] = useState<string>(".jpg");
@@ -37,7 +44,8 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     setMounted(true);
   }, []);
 
-  const getColumnCount = () => {
+  const getColumnCount = (type: string) => {
+    if (type === "gif") return 5;
     if (typeof window === "undefined") return 3;
     const width = window.innerWidth;
     if (width < 768) return 2;
@@ -48,10 +56,30 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     const typeToFolder: Record<string, string> = {
     horizontal: "h",
     vertical: "v",
+    avatar: "a",
     gif: "gif",
     };
 
     const folder = typeToFolder[type] || type;
+
+    // 根据类型设置不同的宽高比
+    const getImageDimensions = () => {
+      switch (type) {
+        case "horizontal": // 横屏 4:3
+          return { width: 800, height: 600, aspectRatio: "4/3" };
+        case "vertical": // 竖屏 9:16
+          return { width: 450, height: 800, aspectRatio: "9/16" };
+        case "avatar": // 头像 1:1
+          return { width: 800, height: 800, aspectRatio: "1/1" };
+        case "gif":
+        default: // GIF 不限制比例，只限制最大尺寸
+          return { width: 1000, height: 1000, aspectRatio: undefined };
+      }
+    };
+
+
+    const { width: imgWidth, height: imgHeight, aspectRatio } = getImageDimensions();
+
 
   useEffect(() => {
     const fetchMaxCount = async () => {
@@ -59,9 +87,8 @@ export function ImageGallery({ type }: ImageGalleryProps) {
         const response = await fetch("/counts.json");
         const data = await response.json();
         const displayCounts = data.real_counts || data.counts;
-        const count = displayCounts[folder];
+        const count = displayCounts[folder] ?? 0;
 
-        setMaxCount(count);
         setHashLength(data.hash_length || 3);
 
         if (data.category_exts && data.category_exts[folder]) {
@@ -70,8 +97,11 @@ export function ImageGallery({ type }: ImageGalleryProps) {
           setFileExt(data.output_ext || ".jpg");
         }
 
+        setMaxCount(count);
         setCountsLoaded(true);
-      } catch (error) {}
+      } catch (error) {
+        setCountsLoaded(true);
+      }
     };
     fetchMaxCount();
   }, [type, folder]);
@@ -100,14 +130,40 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     setImages((prev) => [...prev, ...newImages]);
     setPage((prev) => prev + 1);
     setLoading(false);
-  }, [page, loading, type, maxCount, countsLoaded, hashLength, fileExt]);
+  }, [page, loading, maxCount, countsLoaded, hashLength, fileExt, folder]);
+
+  // Keep ref updated
+  loadImagesRef.current = loadImages;
 
   useEffect(() => {
     setImages([]);
     setPage(1);
     setLoading(false);
+    setCountsLoaded(false);
+    setMaxCount(0);
+    setImageErrors(new Set());
+    setImageLoaded(new Set());
+    setShowScrollTop(false);
     initialLoadDone.current = false;
   }, [type]);
+
+  // Scroll to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleImageError = (imageId: number) => {
+    setImageErrors((prev) => new Set(prev).add(imageId));
+  };
+
+  const handleImageLoad = (imageId: number) => {
+    setImageLoaded((prev) => new Set(prev).add(imageId));
+  };
 
   useEffect(() => {
     if (
@@ -117,9 +173,9 @@ export function ImageGallery({ type }: ImageGalleryProps) {
       images.length === 0
     ) {
       initialLoadDone.current = true;
-      loadImages();
+      loadImagesRef.current?.();
     }
-  }, [countsLoaded, maxCount, images.length, loadImages]);
+  }, [countsLoaded, maxCount, images.length]);
 
   useEffect(() => {
     if (observerRef.current) {
@@ -133,7 +189,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
           !loading &&
           (page - 1) * IMAGES_PER_PAGE < maxCount
         ) {
-          loadImages();
+          loadImagesRef.current?.();
         }
       },
       { threshold: 0.5 }
@@ -148,7 +204,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
         observerRef.current.disconnect();
       }
     };
-  }, [loading, page, loadImages, maxCount]);
+  }, [loading, page, maxCount]);
 
   useEffect(() => {
     if (galleryContainerRef.current) {
@@ -181,8 +237,42 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     };
   }, [images]);
 
+  // Scroll-in animation observer
+  useEffect(() => {
+    if (animateObserverRef.current) {
+      animateObserverRef.current.disconnect();
+    }
+
+    animateObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target as HTMLElement;
+            // Use rAF to ensure initial state is rendered before transition
+            requestAnimationFrame(() => {
+              el.classList.remove("opacity-0", "translate-y-4", "transition-none");
+              el.classList.add("opacity-100", "translate-y-0", "transition-all", "duration-500", "ease-out");
+            });
+            animateObserverRef.current?.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    // Observe all cards marked with data-animate
+    const cards = containerRef.current?.querySelectorAll("[data-animate]");
+    cards?.forEach((card) => {
+      animateObserverRef.current?.observe(card);
+    });
+
+    return () => {
+      animateObserverRef.current?.disconnect();
+    };
+  }, [images, mounted]);
+
   const renderMasonryLayout = () => {
-    const columnCount = mounted ? getColumnCount() : 3;
+    const columnCount = mounted ? getColumnCount(type) : (type === "gif" ? 5 : 3);
     const columns: ImageItem[][] = Array.from(
       { length: columnCount },
       () => []
@@ -197,39 +287,63 @@ export function ImageGallery({ type }: ImageGalleryProps) {
       <div className="flex gap-4 w-full" ref={containerRef}>
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex flex-col gap-4 flex-1">
-            {column.map((image) => (
+            {column.map((image, indexInSection) => (
               <div
                 key={`${type}-${image.id}`}
-                className="group relative overflow-hidden rounded-lg bg-muted"
+                data-animate
+                className="group relative overflow-hidden rounded-lg bg-muted opacity-0 translate-y-4 transition-none"
+                style={{ transitionDelay: `${(indexInSection % 6) * 80}ms` }}
               >
-                <a
-                  data-fancybox="gallery"
-                  href={image.url}
-                  data-caption={`#${image.id}`}
-                  className="w-full cursor-zoom-in block"
-                >
-                  <Image
-                    src={image.url || "/placeholder.svg"}
-                    alt={`Gallery image ${image.id}`}
-                    width={800}
-                    height={600}
-                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    loading="lazy"
-                  />
-                </a>
+                {imageErrors.has(image.id) ? (
+                  <div className="aspect-square flex items-center justify-center text-muted-foreground">
+                    <span className="text-sm">加载失败</span>
+                  </div>
+                ) : (
+                  <a
+                    data-fancybox="gallery"
+                    href={image.url}
+                    data-caption={`#${image.id}`}
+                    className="w-full cursor-zoom-in block"
+                  >
+                    <Image
+                      src={image.url || "/placeholder.svg"}
+                      alt={`Gallery image ${image.id}`}
+                      width={imgWidth}
+                      height={imgHeight}
+                      className={`
+                        w-full object-cover
+                        transition-all duration-700 ease-out
+                        group-hover:scale-105
+                        ${imageLoaded.has(image.id) ? "scale-100 blur-0" : "scale-105 blur-xl"}
+                      `}
+                      style={aspectRatio ? { aspectRatio } : undefined}
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      loading={image.id < IMAGES_PER_PAGE ? "eager" : "lazy"}
+                      priority={image.id < 8}
+                      onError={() => handleImageError(image.id)}
+                      onLoad={() => handleImageLoad(image.id)}
+                    />
+                  </a>
+                )}
 
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
-
-                <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                  #{image.id}
-                </div>
+                {!imageErrors.has(image.id) && (
+                  <>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
+                    <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      #{image.id}
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
         ))}
       </div>
     );
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -251,6 +365,29 @@ export function ImageGallery({ type }: ImageGalleryProps) {
             </p>
           )}
       </div>
+
+      {/* Scroll to top button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring z-50"
+          aria-label="回到顶部"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18 15l-6-6-6 6" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
