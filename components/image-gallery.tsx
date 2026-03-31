@@ -27,6 +27,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const animateObserverRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const initialLoadDone = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +44,8 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     setMounted(true);
   }, []);
 
-  const getColumnCount = () => {
+  const getColumnCount = (type: string) => {
+    if (type === "gif") return 5;
     if (typeof window === "undefined") return 3;
     const width = window.innerWidth;
     if (width < 768) return 2;
@@ -235,8 +237,42 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     };
   }, [images]);
 
+  // Scroll-in animation observer
+  useEffect(() => {
+    if (animateObserverRef.current) {
+      animateObserverRef.current.disconnect();
+    }
+
+    animateObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target as HTMLElement;
+            // Use rAF to ensure initial state is rendered before transition
+            requestAnimationFrame(() => {
+              el.classList.remove("opacity-0", "translate-y-4", "transition-none");
+              el.classList.add("opacity-100", "translate-y-0", "transition-all", "duration-500", "ease-out");
+            });
+            animateObserverRef.current?.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    // Observe all cards marked with data-animate
+    const cards = containerRef.current?.querySelectorAll("[data-animate]");
+    cards?.forEach((card) => {
+      animateObserverRef.current?.observe(card);
+    });
+
+    return () => {
+      animateObserverRef.current?.disconnect();
+    };
+  }, [images, mounted]);
+
   const renderMasonryLayout = () => {
-    const columnCount = mounted ? getColumnCount() : 3;
+    const columnCount = mounted ? getColumnCount(type) : (type === "gif" ? 5 : 3);
     const columns: ImageItem[][] = Array.from(
       { length: columnCount },
       () => []
@@ -251,15 +287,13 @@ export function ImageGallery({ type }: ImageGalleryProps) {
       <div className="flex gap-4 w-full" ref={containerRef}>
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex flex-col gap-4 flex-1">
-            {column.map((image) => (
+            {column.map((image, indexInSection) => (
               <div
                 key={`${type}-${image.id}`}
-                className="group relative overflow-hidden rounded-lg bg-muted"
+                data-animate
+                className="group relative overflow-hidden rounded-lg bg-muted opacity-0 translate-y-4 transition-none"
+                style={{ transitionDelay: `${(indexInSection % 6) * 80}ms` }}
               >
-                {!imageLoaded.has(image.id) && !imageErrors.has(image.id) && (
-                  <div className="absolute inset-0 bg-muted/20 animate-pulse" />
-                )}
-
                 {imageErrors.has(image.id) ? (
                   <div className="aspect-square flex items-center justify-center text-muted-foreground">
                     <span className="text-sm">加载失败</span>
@@ -276,7 +310,12 @@ export function ImageGallery({ type }: ImageGalleryProps) {
                       alt={`Gallery image ${image.id}`}
                       width={imgWidth}
                       height={imgHeight}
-                      className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${type === "gif" ? "h-auto" : "h-auto"}`}
+                      className={`
+                        w-full object-cover
+                        transition-all duration-700 ease-out
+                        group-hover:scale-105
+                        ${imageLoaded.has(image.id) ? "scale-100 blur-0" : "scale-105 blur-xl"}
+                      `}
                       style={aspectRatio ? { aspectRatio } : undefined}
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       loading={image.id < IMAGES_PER_PAGE ? "eager" : "lazy"}
