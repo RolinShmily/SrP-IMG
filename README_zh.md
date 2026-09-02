@@ -1,86 +1,86 @@
-# SrP-IMG — Full-Featured Random Image API & Gallery 🖼️
+# SrP-IMG — 全功能随机图片 API & 画廊 🖼️
 
 <p align="center">
-  <b>English</b> • <a href="./README_zh.md">简体中文</a>
+  <a href="./README.md">English</a> • <b>简体中文</b>
 </p>
 
-An unlimited-traffic, zero-cost, multi-category random image solution designed for deployment on **Cloudflare Pages / Workers**. Built with Python pre-build generation, it transforms static file storage into high-performance dynamic random image APIs alongside a modern waterfall image gallery web app.
+基于 **Cloudflare Pages / Workers** 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为高性能动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
 
-### ✨ Core Highlights
+### ✨ 核心亮点
 
-* **Zero-Cost Architecture**: Fully serverless and hosted on Cloudflare Pages/Workers — no traditional servers or databases required.
-* **Smart Multi-Category Support**: Out-of-the-box support for `h` (landscape/horizontal), `v` (portrait/vertical), and custom categories (e.g., `gif`, `a` for avatars, `wallpaper`).
-* **Dynamic Suffix Resolution**: `h` and `v` categories enforce `.jpg` for universal API compatibility; custom categories automatically detect and preserve original file extensions (e.g., `.gif`, `.png`).
-* **Automated Gallery Adaptation**: The Next.js frontend automatically loads `counts.json` to adapt categories, item counts, and image extensions without manual UI code changes.
-* **Dual Access Modes**: Supports serverless JS redirection (API Mode) and edge Transform Rules rewrite (Transparent Mode).
+* **零成本方案**：完全托管于 Cloudflare Pages/Workers，无需传统服务器，无需数据库。
+* **智能多分类**：支持 `h` (横屏)、`v` (竖屏) 以及自定义分类（如 `gif`、`a` 头像、`wallpaper` 壁纸）。
+* **动态后缀支持**：`h/v` 固定为 `.jpg` 确保 API 客户端通用兼容性，其他自定义分类自动探测并保留原图后缀（如 `.gif`, `.png`）。
+* **自动化画廊**：前端画廊通过读取 `counts.json` 自动适配分类、数量和文件格式，无需手动修改前端展示代码。
+* **双模式调用**：支持服务端 JS 重定向 (API 模式) 与边缘 URL 重写 (无感模式)。
 
 ---
 
-### 📁 Directory Structure
+### 📁 目录结构
 
 ```text
-├── oriImg/           # [Core] Raw image asset directory
-│   ├── h/            # Landscape images (forced to .jpg)
-│   ├── v/            # Portrait images (forced to .jpg)
-│   └── gif/          # Custom categories (retains .gif extension)
-├── public/           # Build output directory (generated hex images & metadata)
-│   ├── h/, v/, gif/  # Mapped image collections
-│   └── counts.json   # Auto-generated index metadata file
+├── oriImg/           # [核心] 原始素材目录
+│   ├── h/            # 横屏图片素材（强转为 .jpg）
+│   ├── v/            # 竖屏图片素材（强转为 .jpg）
+│   └── gif/          # 自定义分类（自动保留 .gif 后缀）
+├── public/           # 构建产物目录（存放生成的十六进制图片和元数据）
+│   ├── h/, v/, gif/  # 映射后的图片集合
+│   └── counts.json   # 自动生成的全站索引文件
 ├── functions/        # Cloudflare Pages Functions
-│   └── pic.js        # Script-generated server-side redirect endpoint
-├── components/       # Next.js UI components
-│   └── image-gallery.tsx # Core gallery component with mapping logic
-├── gen_img.py        # Build engine: handles file naming, suffix detection & metadata
-├── index.js          # Cloudflare Workers entrypoint
+│   └── pic.js        # 由脚本生成的服务端重定向接口
+├── components/       # Next.js 组件
+│   └── image-gallery.tsx # 核心画廊组件（映射表逻辑）
+├── gen_img.py        # 构建大脑：处理图片命名、后缀识别及生成元数据
+├── index.js          # Cloudflare Workers 入口
 └── README.md
 ```
 
 ---
 
-### 🖥️ Preview
+### 🖥️ 前端预览
 
 ![preview](preview.png)
 
 ---
 
-### 🚀 Deployment Guide
+### 🚀 部署指南
 
-> **⚠️ Notes**:
-> - CI is not limited to Cloudflare; however, edge URL rewriting requires Cloudflare Transform Rules.
-> - A demo deployment is also available on EdgeOne via the [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) branch (`https://eo-img.srprolin.top/pic?img=ua`).
-> - CI build memory varies across platforms. Although the Python script implements size filtering, adjustments may be needed on resource-constrained platforms (compare the `oriImg` folder in the [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) branch).
-> - Cloudflare deployment is generally recommended.
+> **⚠️ 注意**:
+> - 这里的 CI 并不局限于 Cloudflare，只是如果想通过重写 URL 访问随机图，需要用到 Cloudflare Transform Rules。
+> - 目前已经在 EdgeOne 平台以 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支部署了 Pages，可正常通过 `https://eo-img.srprolin.top/pic?img=ua` 访问随机图片。
+> - 各家 CI 平台的构建内存限制不同。虽然 Python 脚本中已内置体积熔断机制，但在 EdgeOne 等平台上仍需合理控制素材体积，可参考 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支的 `oriImg` 文件夹。
+> - 推荐使用 Cloudflare 部署，建议配合优质网络或自定义域名提升访问体验。
 
-#### 1. Material Preparation
+#### 1. 素材准备
 
-Create category folders inside `oriImg/` in the project root:
+在根目录 `oriImg/` 下创建分类文件夹：
 
-* **API Categories**: Create `h` and `v` directories and place landscape/portrait images inside (these are output as `.jpg` for broad API compatibility).
-* **Custom Categories**: Create folders such as `gif`, `anime`, or `a`. The script automatically takes the extension of the first image in each folder as the output format.
+* **API 专用分类**：创建 `h` 和 `v` 目录，放入横/竖屏图片（输出时会统一固定为 `.jpg`，确保兼容所有 API 客户端）。
+* **自定义分类**：创建如 `gif`、`anime`、`a` 等目录。脚本会自动取该目录首张图片的后缀作为该分类的输出后缀。
 
-#### 2. Local Testing
+#### 2. 本地测试
 
-To preview the gallery locally:
+如果您想在本地预览画廊效果，请执行：
 
 ```bash
-# Use --no-copy to quickly generate virtual metadata for testing
+# 使用 --no-copy 快速生成虚拟元数据进行测试
 python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
 
-#### 3. Cloudflare Pages / Workers Production Build
+#### 3. Cloudflare Pages / Workers 生产构建
 
-Configure Cloudflare Pages as follows:
+在 Cloudflare Pages 仪表板配置如下：
 
-* **Framework Preset**: `Next.js`
-* **Build Command**:
+* **框架预设**：`Next.js`
+* **构建命令**：
 ```bash
 python3 gen_img.py --hash-length 2 && npm run build
 ```
-* **Build Output Directory**: `out`
-* **Environment**: Python 3.8+
+* **输出目录**：`out`
+* **环境变量**：确保 Python 环境为 3.8+
 
-If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
+如果使用 **Cloudflare Workers**，配置根目录的 `wrangler.jsonc`：
 ```jsonc
 {
   "name": "srp-img-worker",
@@ -93,146 +93,146 @@ If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
   }
 }
 ```
-*Note: Replace `name` with your Worker name, and set `compatibility_date` to your deployment date.*  
-Deploy command: `npx wrangler deploy`
+*注意：请将 `name` 改为你要部署的 Worker 名称；将 `compatibility_date` 改为你的部署日期。*  
+部署命令：`npx wrangler deploy`
 
 ---
 
-### 💡 Usage & Integration
+### 💡 使用方式
 
-Live Demo: `https://eo-img.srprolin.top` (Supports Methods A & B).
+演示地址：`https://eo-img.srprolin.top` （支持方式 A 与方式 B）。
 
-#### Method A: Serverless API (JS Redirection)
+#### 方式 A：服务端 API (JS 重定向)
 
-Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Ideal for Markdown files and external websites:
+由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，适合在 Markdown 或外部网页中直接引用：
 
-| Endpoint | Target / Behavior | Description |
+| 功能描述 | 调用地址 | 返回结果 |
 | :--- | :--- | :--- |
-| `/pic?img=h` | 302 Redirect to `/h/xxx.jpg` | Random landscape image |
-| `/pic?img=v` | 302 Redirect to `/v/xxx.jpg` | Random portrait image |
-| `/pic?img=ua` | Smart UA-based redirection | Returns vertical for mobile, horizontal for desktop |
+| **随机横图** | `/pic?img=h` | 302 重定向至 `/h/xxx.jpg` |
+| **随机竖图** | `/pic?img=v` | 302 重定向至 `/v/xxx.jpg` |
+| **UA 智能分流** | `/pic?img=ua` | 手机端返回竖图，电脑端返回横图 |
 
-#### Method B: Visual Web Gallery
+#### 方式 B：前端可视化画廊
 
-Visit your deployed root domain (e.g., `https://your-domain.pages.dev`):
+访问部署后的根域名（如 `https://your-domain.pages.dev`）：
 
-* **Responsive Filtering**: Top navigation switches between `h`, `v`, `gif`, and custom categories.
-* **Waterfall Masonry**: High-performance loading powered by Next.js.
-* **Immersive Preview**: Integrated Fancybox with zoom, rotate, fullscreen, and download capabilities.
+* **自动适配**：顶部导航会自动切换 `h`、`v`、`gif` 等分类。
+* **瀑布流展示**：基于 Next.js 的高性能瀑布流动态加载。
+* **沉浸式预览**：集成 Fancybox，支持缩放、旋转、全屏及一键下载。
 
-#### Method C: Edge URL Rewrite (Transparent Mode)
+#### 方式 C：URL 重写 (无感随机)
 
-Configure **Transform Rules** in the Cloudflare Dashboard (*Replace `<your-domain>` with your actual domain*):
+需在 Cloudflare 仪表板手动配置 **Transform Rules**（*请将下列表达式中的 `<your-domain>` 替换为实际域名*）：
 
-**Rule 1: Landscape / Portrait (`h` & `v`)**
-1. **Match Expression**:
+**规则一：横竖屏分类 (`h` / `v`)**
+1. **匹配表达式**：
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
 ```
-2. **Rewrite Path (Dynamic)**:
+2. **路径重写至 (Dynamic)**：
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 ```
 
-**Rule 2: Avatar Category (`a`)**
-1. **Match Expression**:
+**规则二：头像分类 (`a`)**
+1. **匹配表达式**：
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/a") and not ends_with(http.request.uri.path, ".jpeg"))
 ```
-2. **Rewrite Path (Dynamic)**:
+2. **路径重写至 (Dynamic)**：
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
 ```
 
-**Rule 3: GIF Category (`gif`)**
-1. **Match Expression**:
+**规则三：GIF 分类 (`gif`)**
+1. **匹配表达式**：
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
 ```
-2. **Rewrite Path (Dynamic)**:
+2. **路径重写至 (Dynamic)**：
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 ```
 
-> **Note**: If `--hash-length` is set to `3` in your build command, update the substring length in `cf.random_seed` from `2` to `3`.  
-> Example access URL: `https://your-domain.pages.dev/h`
+> **注意**：如果构建命令中 `--hash-length` 值为 `3`，则此处 `cf.random_seed` 截取长度右边界也需从 `2` 改为 `3`。  
+> 访问示例：`https://your-domain.pages.dev/h`
 
 ---
 
-### ⚙️ Technical Details
+### ⚙️ 技术参数细节
 
-#### Build Engine: `gen_img.py`
+#### 关于 `gen_img.py`
 
-When executed, the script performs:
-1. **Hash Expansion**: Uses `--hash-length` to define the random pool size. For length `3`, each category generates $16^3 = 4096$ paths.
-2. **Extension Strategy**:
-   * Inspects each subdirectory under `oriImg`.
-   * If named `h` or `v`, enforces the CLI extension (defaults to `.jpg`).
-   * Otherwise, auto-detects the extension from the first image in that directory.
-3. **Metadata Export**: Generates `counts.json` containing total image counts (`counts`) and extension mappings (`category_exts`).
+脚本执行时会进行以下操作：
+1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成 $16^3 = 4096$ 个访问路径。
+2. **后缀策略**：
+   * 扫描 `oriImg` 下的所有子目录。
+   * 若目录名为 `h` 或 `v`，输出后缀强制遵循命令行参数（默认 `.jpg`）。
+   * 否则，自动探测该目录首张图片的后缀并保留。
+3. **元数据导出**：生成 `counts.json`，记录每个分类的图片总数 (`counts`) 和对应后缀 (`category_exts`)。
 
 ---
 
-### 📦 Storage & Capacity Management
+### 📦 存储与容量管理 (关键说明)
 
-Because Cloudflare Pages and other CI platforms enforce limits on file counts and total artifact sizes, this project includes an **automatic size circuit-breaker**:
+由于 Cloudflare Pages 及其他 CI/CD 平台对单次构建的文件总数和总体积有严格限制，本项目引入了**体积熔断机制**：
 
-#### 1. File Size Threshold
+#### 1. 文件体积限制
 
-* **5MB Limit**: `gen_img.py` scans each source file during the build phase.
-* **Policy**: Any single file exceeding **5MB** is skipped entirely. It will not be copied or included in the hash iteration.
-* **Purpose**: Prevents oversized GIFs or raw photos from exhausting disk space during exponential expansion ($16^3 = 4096\times$).
+* **5MB 阈值**：构建脚本 `gen_img.py` 会在扫描阶段检查每个源文件。
+* **策略**：任何单文件体积超过 **5MB** 的图片将被直接忽略，不会被拷贝，也不会参与哈希迭代。
+* **原因**：防止超大 GIF 或高清素材在指数级迭代（如 $16^3 = 4096$ 倍）后瞬间耗尽磁盘空间。
 
-#### 2. Capacity Formula
+#### 2. 容量计算公式
 
-Estimate total disk consumption using the formula:
+在配置 `--hash-length` 时，请参考以下公式评估预期的磁盘占用：
 
 $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
 
-* $S_{total}$: Total disk space consumed after build.
-* $L$: Specified `hash-length` (default: 3).
-* $\bar{S}_c$: Average size of valid images ($\le 5\text{MB}$) in category $c$.
-* $n$: Total number of category folders.
+* $S_{total}$：构建后的总磁盘占用。
+* $L$：命令行指定的 `hash-length`（默认 3）。
+* $\bar{S}_c$：分类 $c$ 中**所有合规图片 ($\le 5\text{MB}$)** 的平均体积。
+* $n$：分类文件夹的总数。
 
-> *Example*: If category `h` contains 10 images averaging 500KB each, with `hash-length 3`:  
-> Space $= 16^3 \times 500\text{KB} = 4096 \times 0.5\text{MB} \approx 2\text{GB}$.
+> **示例计算**：若 `h` 分类有 10 张图，平均每张 500KB，`hash-length` 为 3：  
+> 占用空间 $= 16^3 \times 500\text{KB} = 4096 \times 0.5\text{MB} \approx 2\text{GB}$。
 
-#### 3. Best Practices
+#### 3. 最佳实践建议
 
-* **Image Compression**: We recommend compressing images and GIFs below 2MB before placing them in `oriImg` (e.g. using [Caesium Image Compressor](https://saerasoft.com/caesium/)).
-* **Adjust Hash Length**: For large image libraries, set `--hash-length` to `2` (generates 256 images per category) to ensure build success.
-* **Build Logs**: Cloudflare build logs will display warnings: `[category] Ignored X files exceeding 5.0MB`.
-
----
-
-### 🎨 Gallery Mapping Table
-
-The gallery component decouples data via the `typeToFolder` mapping table. To add a new category:
-1. Create a new folder under `oriImg/`.
-2. Add a corresponding tab/button in `app/page.tsx`.
-The frontend will dynamically read the extension and count from `counts.json`.
+* **预先压缩**：建议在放入 `oriImg` 之前，使用批量压缩工具（如 [Caesium Image Compressor](https://saerasoft.com/caesium/) 或 TinyPNG、FFmpeg）将素材压缩至 2MB 以内。
+* **动态调整**：如果素材库较大，可将 `--hash-length` 设为 `2`（每个分类生成 256 张），以确保平台构建顺利。
+* **查看日志**：在构建日志中，脚本会明确输出：`[分类名] 忽略了 X 个超过 5.0MB 的文件`。
 
 ---
 
-### 📜 License
+### 🎨 关于画廊映射表
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+画廊组件内部使用 `typeToFolder` 映射表进行解耦。若需增加新分类，仅需：
+1. 在 `oriImg/` 新建对应文件夹。
+2. 在 `app/page.tsx` 增加对应的切换按钮。
+前端会自动匹配 `counts.json` 中的后缀与数量配置，无需修改底层图片加载逻辑。
 
 ---
 
-### 💡 Acknowledgements & Inspirations
+### 📜 开源协议
 
-This project is built upon and inspired by the following open-source projects:
+本项目基于 **MIT 协议** 开源。详见 [LICENSE](LICENSE) 文件。欢迎 Star 关注！
+
+---
+
+### 💡 灵感来源与致谢
+
+本项目在实现过程中参考和借鉴了以下优秀的开源项目：
 
 1. **[EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)** by [@afoim](https://github.com/afoim)  
-   Reference implementation for EdgeOne / Cloudflare Functions serverless random image redirection APIs. Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+   提供了 EdgeOne / Cloudflare Functions 服务端无服务器随机图片重定向接口的实现思路。该项目遵循 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可开源。
 2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)  
-   Inspiration for Cloudflare Transform Rules URL rewriting logic and hex hash generation approach.
+   启发了基于 Cloudflare Transform Rules 边缘重写与十六进制哈希扩散实现无感随机图的核心设计。
 3. **[v0-gallery-website](https://github.com/afoim/v0-gallery-website)** by [@afoim](https://github.com/afoim)  
-   Initial UI design and Next.js gallery showcase architecture.
+   启发了基于 Next.js 与 Tailwind CSS 的现代化画廊瀑布流展示页面设计。
 
 <details>
-<summary>📄 Click to expand GNU Affero General Public License v3.0 (AGPL-3.0) License Text</summary>
+<summary>📄 展开查看 GNU Affero General Public License v3.0 (AGPL-3.0) 许可证原文</summary>
 
 ```text
                     GNU AFFERO GENERAL PUBLIC LICENSE
@@ -849,7 +849,7 @@ SUCH DAMAGES.
 above cannot be given local legal effect according to their terms,
 reviewing courts shall apply local law that most closely approximates
 an absolute waiver of all civil liability in connection with the
-Program, unless a warranty or assumption of liability accompanies a
+Program, special warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS

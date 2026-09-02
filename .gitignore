@@ -23,6 +23,7 @@ yarn-error.log*
 .vercel
 
 .claude
+.memory
 
 # typescript
 *.tsbuildinfo
