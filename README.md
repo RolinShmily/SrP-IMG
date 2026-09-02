@@ -234,8 +234,6 @@ This project is built upon and inspired by the following open-source projects:
    Reference implementation for EdgeOne / Cloudflare Functions serverless random image redirection APIs. Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)  
    Inspiration for Cloudflare Transform Rules URL rewriting logic and hex hash generation approach.
-3. **[v0-gallery-website](https://github.com/afoim/v0-gallery-website)** by [@afoim](https://github.com/afoim)  
-   Initial UI design and Next.js gallery showcase architecture.
 
 <details>
 <summary>📄 Click to expand GNU Affero General Public License v3.0 (AGPL-3.0) License Text</summary>

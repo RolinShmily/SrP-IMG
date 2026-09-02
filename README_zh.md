@@ -234,8 +234,6 @@ $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
    提供了 EdgeOne / Cloudflare Functions 服务端无服务器随机图片重定向接口的实现思路。该项目遵循 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可开源。
 2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)  
    启发了基于 Cloudflare Transform Rules 边缘重写与十六进制哈希扩散实现无感随机图的核心设计。
-3. **[v0-gallery-website](https://github.com/afoim/v0-gallery-website)** by [@afoim](https://github.com/afoim)  
-   启发了基于 Next.js 与 Tailwind CSS 的现代化画廊瀑布流展示页面设计。
 
 <details>
 <summary>📄 展开查看 GNU Affero General Public License v3.0 (AGPL-3.0) 许可证原文</summary>
