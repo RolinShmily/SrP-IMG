@@ -1,4 +1,4 @@
-# SrP-IMG — 全功能随机图片 API & 画廊 🖼️
+# SrP-IMG — 全功能随机图片 API & 画廊
 
 <p align="center">
   <a href="./README.md">English</a> • <b>简体中文</b>
@@ -19,20 +19,26 @@
 ### 📁 目录结构
 
 ```text
-├── oriImg/           # [核心] 原始素材目录
-│   ├── h/            # 横屏图片素材（强转为 .jpg）
-│   ├── v/            # 竖屏图片素材（强转为 .jpg）
-│   └── gif/          # 自定义分类（自动保留 .gif 后缀）
-├── public/           # 构建产物目录（存放生成的十六进制图片和元数据）
-│   ├── h/, v/, gif/  # 映射后的图片集合
-│   └── counts.json   # 自动生成的全站索引文件
-├── functions/        # Cloudflare Pages Functions
-│   └── pic.js        # 由脚本生成的服务端重定向接口
-├── components/       # Next.js 组件
-│   └── image-gallery.tsx # 核心画廊组件（映射表逻辑）
-├── gen_img.py        # 构建大脑：处理图片命名、后缀识别及生成元数据
-├── index.js          # Cloudflare Workers 入口
-└── README.md
+├── oriImg/                 # [核心] 原始素材目录（按分类子文件夹组织）
+│   ├── h/                  # 横屏图片素材（强转为 .jpg）
+│   ├── v/                  # 竖屏图片素材（强转为 .jpg）
+│   ├── a/                  # 头像图片素材
+│   └── gif/                # 自定义分类（自动保留 .gif 后缀）
+├── public/                 # 静态资源与构建产物目录
+│   ├── counts.json         # 自动生成的全站索引与元数据
+│   └── h/、v/、a/、gif/     # 映射后的十六进制图片集合
+├── functions/              # Cloudflare Pages Functions
+│   └── pic.js              # 服务端随机重定向接口（Pages）
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # 画廊主页面
+│   └── layout.tsx          # 根布局与元数据配置
+├── components/             # React UI 组件
+│   └── image-gallery.tsx   # 核心瀑布流画廊组件（映射表逻辑）
+├── gen_img.py              # 构建大脑：哈希扩散、后缀识别与元数据导出
+├── index.js                # Cloudflare Workers 入口
+├── wrangler.jsonc          # Cloudflare Workers 配置文件
+├── README.md               # 英文说明文档
+└── README_zh.md            # 中文说明文档
 ```
 
 ---

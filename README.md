@@ -1,4 +1,4 @@
-# SrP-IMG — Full-Featured Random Image API & Gallery 🖼️
+# SrP-IMG — Full-Featured Random Image API & Gallery
 
 <p align="center">
   <b>English</b> • <a href="./README_zh.md">简体中文</a>
@@ -19,20 +19,26 @@ An unlimited-traffic, zero-cost, multi-category random image solution designed f
 ### 📁 Directory Structure
 
 ```text
-├── oriImg/           # [Core] Raw image asset directory
-│   ├── h/            # Landscape images (forced to .jpg)
-│   ├── v/            # Portrait images (forced to .jpg)
-│   └── gif/          # Custom categories (retains .gif extension)
-├── public/           # Build output directory (generated hex images & metadata)
-│   ├── h/, v/, gif/  # Mapped image collections
-│   └── counts.json   # Auto-generated index metadata file
-├── functions/        # Cloudflare Pages Functions
-│   └── pic.js        # Script-generated server-side redirect endpoint
-├── components/       # Next.js UI components
-│   └── image-gallery.tsx # Core gallery component with mapping logic
-├── gen_img.py        # Build engine: handles file naming, suffix detection & metadata
-├── index.js          # Cloudflare Workers entrypoint
-└── README.md
+├── oriImg/                 # [Core] Raw source images (organized by category folders)
+│   ├── h/                  # Landscape images (enforced .jpg)
+│   ├── v/                  # Portrait images (enforced .jpg)
+│   ├── a/                  # Avatar images
+│   └── gif/                # Custom category (preserves .gif format)
+├── public/                 # Static assets & build outputs
+│   ├── counts.json         # Auto-generated global index & metadata
+│   └── h/, v/, a/, gif/    # Mapped hex-named image collections
+├── functions/              # Cloudflare Pages Functions
+│   └── pic.js              # Server-side redirect API endpoint (Pages)
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # Main gallery page
+│   └── layout.tsx          # Root layout & global configuration
+├── components/             # React UI components
+│   └── image-gallery.tsx   # Core waterfall gallery component (mapping logic)
+├── gen_img.py              # Build engine: hash expansion, suffix detection & metadata export
+├── index.js                # Cloudflare Workers entrypoint
+├── wrangler.jsonc          # Cloudflare Workers configuration
+├── README.md               # English documentation
+└── README_zh.md            # Chinese documentation
 ```
 
 ---
