@@ -51,12 +51,6 @@
 
 ### 🚀 部署指南
 
-> **⚠️ 注意**:
-> - 这里的 CI 并不局限于 Cloudflare，只是如果想通过重写 URL 访问随机图，需要用到 Cloudflare Transform Rules。
-> - 目前已经在 EdgeOne 平台以 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支部署了 Pages，可正常通过 `https://eo-img.srprolin.top/pic?img=ua` 访问随机图片。
-> - 各家 CI 平台的构建内存限制不同。虽然 Python 脚本中已内置体积熔断机制，但在 EdgeOne 等平台上仍需合理控制素材体积，可参考 [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) 分支的 `oriImg` 文件夹。
-> - 推荐使用 Cloudflare 部署，建议配合优质网络或自定义域名提升访问体验。
-
 #### 1. 素材准备
 
 在根目录 `oriImg/` 下创建分类文件夹：
@@ -80,13 +74,16 @@ npm run dev
 
 * **框架预设**：`Next.js`
 * **构建命令**：
+
 ```bash
 python3 gen_img.py --hash-length 2 && npm run build
 ```
+
 * **输出目录**：`out`
 * **环境变量**：确保 Python 环境为 3.8+
 
 如果使用 **Cloudflare Workers**，配置根目录的 `wrangler.jsonc`：
+
 ```jsonc
 {
   "name": "srp-img-worker",
@@ -99,7 +96,8 @@ python3 gen_img.py --hash-length 2 && npm run build
   }
 }
 ```
-*注意：请将 `name` 改为你要部署的 Worker 名称；将 `compatibility_date` 改为你的部署日期。*  
+
+*注意：请将 `name` 改为你要部署的 Worker 名称；将 `compatibility_date` 改为你的部署日期。*
 部署命令：`npx wrangler deploy`
 
 ---
@@ -112,10 +110,10 @@ python3 gen_img.py --hash-length 2 && npm run build
 
 由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，适合在 Markdown 或外部网页中直接引用：
 
-| 功能描述 | 调用地址 | 返回结果 |
-| :--- | :--- | :--- |
-| **随机横图** | `/pic?img=h` | 302 重定向至 `/h/xxx.jpg` |
-| **随机竖图** | `/pic?img=v` | 302 重定向至 `/v/xxx.jpg` |
+| 功能描述              | 调用地址        | 返回结果                       |
+| :-------------------- | :-------------- | :----------------------------- |
+| **随机横图**    | `/pic?img=h`  | 302 重定向至`/h/xxx.jpg`     |
+| **随机竖图**    | `/pic?img=v`  | 302 重定向至`/v/xxx.jpg`     |
 | **UA 智能分流** | `/pic?img=ua` | 手机端返回竖图，电脑端返回横图 |
 
 #### 方式 B：前端可视化画廊
@@ -131,36 +129,48 @@ python3 gen_img.py --hash-length 2 && npm run build
 需在 Cloudflare 仪表板手动配置 **Transform Rules**（*请将下列表达式中的 `<your-domain>` 替换为实际域名*）：
 
 **规则一：横竖屏分类 (`h` / `v`)**
+
 1. **匹配表达式**：
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
 ```
+
 2. **路径重写至 (Dynamic)**：
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 ```
 
 **规则二：头像分类 (`a`)**
+
 1. **匹配表达式**：
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/a") and not ends_with(http.request.uri.path, ".jpeg"))
 ```
+
 2. **路径重写至 (Dynamic)**：
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
 ```
 
 **规则三：GIF 分类 (`gif`)**
+
 1. **匹配表达式**：
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
 ```
+
 2. **路径重写至 (Dynamic)**：
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 ```
 
-> **注意**：如果构建命令中 `--hash-length` 值为 `3`，则此处 `cf.random_seed` 截取长度右边界也需从 `2` 改为 `3`。  
+> **注意**：如果构建命令中 `--hash-length` 值为 `3`，则此处 `cf.random_seed` 截取长度右边界也需从 `2` 改为 `3`。
 > 访问示例：`https://your-domain.pages.dev/h`
 
 ---
@@ -170,6 +180,7 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 #### 关于 `gen_img.py`
 
 脚本执行时会进行以下操作：
+
 1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成 $16^3 = 4096$ 个访问路径。
 2. **后缀策略**：
    * 扫描 `oriImg` 下的所有子目录。
@@ -193,14 +204,16 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 在配置 `--hash-length` 时，请参考以下公式评估预期的磁盘占用：
 
-$$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
+$$
+S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)
+$$
 
 * $S_{total}$：构建后的总磁盘占用。
 * $L$：命令行指定的 `hash-length`（默认 3）。
 * $\bar{S}_c$：分类 $c$ 中**所有合规图片 ($\le 5\text{MB}$)** 的平均体积。
 * $n$：分类文件夹的总数。
 
-> **示例计算**：若 `h` 分类有 10 张图，平均每张 500KB，`hash-length` 为 3：  
+> **示例计算**：若 `h` 分类有 10 张图，平均每张 500KB，`hash-length` 为 3：
 > 占用空间 $= 16^3 \times 500\text{KB} = 4096 \times 0.5\text{MB} \approx 2\text{GB}$。
 
 #### 3. 最佳实践建议
@@ -214,9 +227,10 @@ $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
 ### 🎨 关于画廊映射表
 
 画廊组件内部使用 `typeToFolder` 映射表进行解耦。若需增加新分类，仅需：
+
 1. 在 `oriImg/` 新建对应文件夹。
 2. 在 `app/page.tsx` 增加对应的切换按钮。
-前端会自动匹配 `counts.json` 中的后缀与数量配置，无需修改底层图片加载逻辑。
+   前端会自动匹配 `counts.json` 中的后缀与数量配置，无需修改底层图片加载逻辑。
 
 ---
 
@@ -230,9 +244,8 @@ $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
 
 本项目在实现过程中参考和借鉴了以下优秀的开源项目：
 
-1. **[EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)** by [@afoim](https://github.com/afoim)  
-   提供了 EdgeOne / Cloudflare Functions 服务端无服务器随机图片重定向接口的实现思路。该项目遵循 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可开源。
-2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)  
+1. **[EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)** by [@afoim](https://github.com/afoim)提供了 EdgeOne / Cloudflare Functions 服务端无服务器随机图片重定向接口的实现思路。该项目遵循 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可开源。
+2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)
    启发了基于 Cloudflare Transform Rules 边缘重写与十六进制哈希扩散实现无感随机图的核心设计。
 
 <details>
@@ -858,4 +871,5 @@ copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
 ```
+
 </details>

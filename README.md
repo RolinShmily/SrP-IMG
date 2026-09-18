@@ -51,12 +51,6 @@ An unlimited-traffic, zero-cost, multi-category random image solution designed f
 
 ### 🚀 Deployment Guide
 
-> **⚠️ Notes**:
-> - CI is not limited to Cloudflare; however, edge URL rewriting requires Cloudflare Transform Rules.
-> - A demo deployment is also available on EdgeOne via the [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) branch (`https://eo-img.srprolin.top/pic?img=ua`).
-> - CI build memory varies across platforms. Although the Python script implements size filtering, adjustments may be needed on resource-constrained platforms (compare the `oriImg` folder in the [dev](https://github.com/RolinShmily/SrP-IMG/tree/dev) branch).
-> - Cloudflare deployment is generally recommended.
-
 #### 1. Material Preparation
 
 Create category folders inside `oriImg/` in the project root:
@@ -80,13 +74,16 @@ Configure Cloudflare Pages as follows:
 
 * **Framework Preset**: `Next.js`
 * **Build Command**:
+
 ```bash
 python3 gen_img.py --hash-length 2 && npm run build
 ```
+
 * **Build Output Directory**: `out`
 * **Environment**: Python 3.8+
 
 If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
+
 ```jsonc
 {
   "name": "srp-img-worker",
@@ -99,7 +96,8 @@ If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
   }
 }
 ```
-*Note: Replace `name` with your Worker name, and set `compatibility_date` to your deployment date.*  
+
+*Note: Replace `name` with your Worker name, and set `compatibility_date` to your deployment date.*
 Deploy command: `npx wrangler deploy`
 
 ---
@@ -112,11 +110,11 @@ Live Demo: `https://eo-img.srprolin.top` (Supports Methods A & B).
 
 Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Ideal for Markdown files and external websites:
 
-| Endpoint | Target / Behavior | Description |
-| :--- | :--- | :--- |
-| `/pic?img=h` | 302 Redirect to `/h/xxx.jpg` | Random landscape image |
-| `/pic?img=v` | 302 Redirect to `/v/xxx.jpg` | Random portrait image |
-| `/pic?img=ua` | Smart UA-based redirection | Returns vertical for mobile, horizontal for desktop |
+| Endpoint        | Target / Behavior             | Description                                         |
+| :-------------- | :---------------------------- | :-------------------------------------------------- |
+| `/pic?img=h`  | 302 Redirect to`/h/xxx.jpg` | Random landscape image                              |
+| `/pic?img=v`  | 302 Redirect to`/v/xxx.jpg` | Random portrait image                               |
+| `/pic?img=ua` | Smart UA-based redirection    | Returns vertical for mobile, horizontal for desktop |
 
 #### Method B: Visual Web Gallery
 
@@ -131,36 +129,48 @@ Visit your deployed root domain (e.g., `https://your-domain.pages.dev`):
 Configure **Transform Rules** in the Cloudflare Dashboard (*Replace `<your-domain>` with your actual domain*):
 
 **Rule 1: Landscape / Portrait (`h` & `v`)**
+
 1. **Match Expression**:
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
 ```
+
 2. **Rewrite Path (Dynamic)**:
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 ```
 
 **Rule 2: Avatar Category (`a`)**
+
 1. **Match Expression**:
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/a") and not ends_with(http.request.uri.path, ".jpeg"))
 ```
+
 2. **Rewrite Path (Dynamic)**:
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
 ```
 
 **Rule 3: GIF Category (`gif`)**
+
 1. **Match Expression**:
+
 ```text
 (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
 ```
+
 2. **Rewrite Path (Dynamic)**:
+
 ```text
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 ```
 
-> **Note**: If `--hash-length` is set to `3` in your build command, update the substring length in `cf.random_seed` from `2` to `3`.  
+> **Note**: If `--hash-length` is set to `3` in your build command, update the substring length in `cf.random_seed` from `2` to `3`.
 > Example access URL: `https://your-domain.pages.dev/h`
 
 ---
@@ -170,6 +180,7 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 #### Build Engine: `gen_img.py`
 
 When executed, the script performs:
+
 1. **Hash Expansion**: Uses `--hash-length` to define the random pool size. For length `3`, each category generates $16^3 = 4096$ paths.
 2. **Extension Strategy**:
    * Inspects each subdirectory under `oriImg`.
@@ -193,14 +204,16 @@ Because Cloudflare Pages and other CI platforms enforce limits on file counts an
 
 Estimate total disk consumption using the formula:
 
-$$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
+$$
+S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)
+$$
 
 * $S_{total}$: Total disk space consumed after build.
 * $L$: Specified `hash-length` (default: 3).
 * $\bar{S}_c$: Average size of valid images ($\le 5\text{MB}$) in category $c$.
 * $n$: Total number of category folders.
 
-> *Example*: If category `h` contains 10 images averaging 500KB each, with `hash-length 3`:  
+> *Example*: If category `h` contains 10 images averaging 500KB each, with `hash-length 3`:
 > Space $= 16^3 \times 500\text{KB} = 4096 \times 0.5\text{MB} \approx 2\text{GB}$.
 
 #### 3. Best Practices
@@ -214,9 +227,10 @@ $$S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)$$
 ### 🎨 Gallery Mapping Table
 
 The gallery component decouples data via the `typeToFolder` mapping table. To add a new category:
+
 1. Create a new folder under `oriImg/`.
 2. Add a corresponding tab/button in `app/page.tsx`.
-The frontend will dynamically read the extension and count from `counts.json`.
+   The frontend will dynamically read the extension and count from `counts.json`.
 
 ---
 
@@ -230,9 +244,8 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 This project is built upon and inspired by the following open-source projects:
 
-1. **[EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)** by [@afoim](https://github.com/afoim)  
-   Reference implementation for EdgeOne / Cloudflare Functions serverless random image redirection APIs. Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)  
+1. **[EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI)** by [@afoim](https://github.com/afoim)Reference implementation for EdgeOne / Cloudflare Functions serverless random image redirection APIs. Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+2. **[cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)** by [@afoim](https://github.com/afoim)
    Inspiration for Cloudflare Transform Rules URL rewriting logic and hex hash generation approach.
 
 <details>
@@ -858,4 +871,5 @@ copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
 ```
+
 </details>
