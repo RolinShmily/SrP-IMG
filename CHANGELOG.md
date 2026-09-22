@@ -9,11 +9,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **No tagged release yet.** The version in `package.json` is `0.1.0` and `main` is
-> always deployable, but nothing has been tagged. Everything below is therefore
-> unreleased; entries will be moved under a version heading at the first tag.
-
 ## [Unreleased]
+
+Nothing yet.
+
+## [0.1.0] - 2026-09-22
+
+First tagged release. `main` is deployable at all times, so this also describes
+everything that shipped before the tag.
 
 ### Added
 
@@ -31,21 +34,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   variant, and a GitHub Actions workflow that builds and deploys `main`.
 * **Documentation** — bilingual README, plus a documented Cloudflare Transform Rules
   recipe for the no-JavaScript "transparent mode" endpoint.
-* **Community health files** — `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, this
-  changelog, issue forms, a pull request template and a CI workflow.
+* **Community health files** — `CONTRIBUTING`, `CODE_OF_CONDUCT` (Contributor Covenant
+  2.1), `SECURITY`, this changelog, issue forms, a pull request template and a CI
+  workflow.
+* **Continuous integration** (`.github/workflows/ci.yml`) — lints, generates the hash
+  pool, verifies the committed Worker entry points match the generator, builds the
+  static export and typechecks, on every pull request.
+* **Linting** — ESLint flat config (`eslint.config.mjs`) built on
+  `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`.
 * **Project metadata** — `license`, `author`, `repository`, `bugs`, `homepage`, `keywords`
-  and `engines` in `package.json`.
+  and `engines` in `package.json`, plus a `typecheck` script.
 
 ### Changed
 
-* Added `.editorconfig` and `.gitattributes` so text files stay LF-normalized and
-  generated artifacts (`index.js`, `functions/pic.js`, `public/counts.json`) are
-  collapsed in diffs.
+* **Preview image** — `preview.png` re-encoded to `preview.webp` with ffmpeg/libwebp at
+  quality 88 (full 2323×1372 resolution kept): 3.4 MB → 384 KB, a 89% reduction.
+* Added `.editorconfig` and `.gitattributes`: text files are LF-normalized, and generated
+  artifacts (`index.js`, `functions/pic.js`, `public/counts.json`) are collapsed in diffs.
+* `.gitignore` now ignores the whole generated `public/` pool except `counts.json` and the
+  static assets, so new categories are covered automatically.
+
+### Fixed
+
+* Synced `functions/pic.js` and `index.js` with the `gen_img.py` output — the committed
+  copies had lost a blank line and their trailing newline, which the new CI check now
+  catches.
+* Removed a dead reset-on-`type` effect in the gallery: `app/page.tsx` already renders the
+  component with `key={galleryType}`, so switching category remounts it with fresh state.
+* Replaced the `setState`-in-effect hydration gates in the gallery and the theme toggle
+  with `useSyncExternalStore`, avoiding a cascading render on every mount.
+* Typed the Fancybox plugin options (`Thumbs`, `Toolbar`) instead of casting to `any`.
 
 ### Security
 
-* The 5MB per-file build limit prevents oversized assets from exhausting CI disk
-  space during hash expansion. See [SECURITY.md](SECURITY.md) for how to report
-  vulnerabilities.
+* The 5MB per-file build limit prevents oversized assets from exhausting CI disk space
+  during hash expansion. See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/commits/main
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0
