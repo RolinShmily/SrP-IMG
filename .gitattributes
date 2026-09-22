@@ -1,0 +1,25 @@
+# Normalize text files to LF in the repository and in the working tree, so a
+# Windows checkout and a Linux CI build produce byte-identical files.
+* text=auto eol=lf
+
+# Binary assets — never rewrite their line endings.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.avif binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.otf  binary
+
+# Produced by gen_img.py at build time; collapse them in diffs by default.
+index.js           linguist-generated=true
+functions/pic.js   linguist-generated=true
+public/counts.json linguist-generated=true
+
+# Image sets are assets, not source — keep them out of the language stats.
+oriImg/** linguist-vendored=true
+public/** linguist-vendored=true

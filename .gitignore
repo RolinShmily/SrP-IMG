@@ -38,9 +38,19 @@ bun.lock
 *.tsbuildinfo
 next-env.d.ts
 
-public/a/*
-public/h/*
-public/v/*
-public/gif/*
+# Generated image pool — produced by gen_img.py. Only the metadata and static
+# assets below are tracked; this covers custom categories automatically.
+/public/*
+!/public/counts.json
+!/public/icon.svg
+!/public/placeholder.svg
 
-__pycache__
+# Python
+__pycache__/
+
+# Cloudflare
+/.wrangler/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db

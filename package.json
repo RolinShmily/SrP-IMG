@@ -2,11 +2,36 @@
   "name": "srp-img",
   "version": "0.1.0",
   "private": true,
+  "description": "Unlimited-traffic, zero-cost random image API and waterfall gallery for Cloudflare Pages / Workers.",
+  "keywords": [
+    "random-image-api",
+    "image-api",
+    "cloudflare-workers",
+    "cloudflare-pages",
+    "nextjs",
+    "image-gallery",
+    "masonry",
+    "serverless"
+  ],
+  "homepage": "https://img.srprolin.top",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RolinShmily/SrP-IMG.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RolinShmily/SrP-IMG/issues"
+  },
+  "license": "MIT",
+  "author": "RoL1n_SrP <rol1n@srprolin.top>",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.7",
