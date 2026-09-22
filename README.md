@@ -234,11 +234,9 @@ The gallery component decouples data via the `typeToFolder` mapping table. To ad
 
 ### 📜 License
 
-This project's **source code** is licensed under the **MIT License** — see [LICENSE](LICENSE). The license does **not** extend to the image assets; see [NOTICE](NOTICE) and the section below.
+This project's **source code** is licensed under the **MIT License** — see [LICENSE](LICENSE) for the full text. The license does **not** extend to the image assets, as set out below.
 
----
-
-### 🖼️ Image Sources & Copyright
+#### Image Sources & Copyright
 
 **The MIT license in this repository covers source code only** (`.ts` / `.tsx` / `.js` / `.py` and configuration files). It does **not** cover `oriImg/` or any image asset in the build output.
 
@@ -249,9 +247,7 @@ This project's **source code** is licensed under the **MIT License** — see [LI
 
 > **Note to deployers**: replace `oriImg/` with your own images, or with a source whose terms you have verified — such as Unsplash, Pexels or Pixabay — and comply with that source's license.
 
----
-
-### 💡 Acknowledgements & Inspirations
+#### Acknowledgements & Inspirations
 
 This project was designed with reference to the following projects. Only their public
 interface design and general approach were consulted — none of their source code was

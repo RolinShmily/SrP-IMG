@@ -7,7 +7,6 @@ on:
     paths-ignore:
       - '**.md'
       - 'LICENSE'
-      - 'NOTICE'
   workflow_dispatch:
 
 # Never let two runs race to deploy the same Worker.
