@@ -1,0 +1,25 @@
+SrP-IMG — license scope notice
+==============================
+
+The MIT License (see the LICENSE file) applies to this repository's SOURCE CODE
+only: the TypeScript / JavaScript / Python sources and the configuration files.
+
+It does NOT apply to the image assets. That means the images under `oriImg/`
+and every image in the build output are NOT licensed under the MIT License.
+
+No license of any kind is granted for those images. The repository owner holds
+no copyright in them — they were collected from the internet and the rights
+remain with their respective authors — so no right to reuse, redistribute or
+relicense them exists to be granted here. Any use beyond reading this
+repository requires permission from the original author.
+
+If you are a rights holder and want an image removed, please open an issue at
+https://github.com/RolinShmily/SrP-IMG/issues and it will be taken down once
+the claim is confirmed.
+
+Deployers are expected to replace `oriImg/` with their own images, or with a
+source whose terms they have verified (for example Unsplash, Pexels or
+Pixabay), in accordance with that source's license.
+
+See the README section "Image Sources & Copyright" for the same notice in
+context.
