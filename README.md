@@ -53,7 +53,7 @@ An unlimited-traffic, zero-cost, multi-category random image solution designed f
 
 ### 🖥️ Preview
 
-![preview](preview.png)
+![preview](preview.webp)
 
 ---
 

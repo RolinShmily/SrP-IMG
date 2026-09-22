@@ -53,7 +53,7 @@
 
 ### 🖥️ 前端预览
 
-![preview](preview.png)
+![preview](preview.webp)
 
 ---
 
