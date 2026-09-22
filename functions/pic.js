@@ -82,6 +82,7 @@ function handleRequest(request) {
     }
 }
 
+
 export function onRequest(context) {
     return handleRequest(context.request);
 }

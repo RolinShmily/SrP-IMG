@@ -81,6 +81,7 @@ function handleRequest(request) {
         return new Response('Internal Error', { status: 500, headers: CORS_HEADERS });
     }
 }
+
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
