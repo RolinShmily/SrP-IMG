@@ -94,7 +94,8 @@ def build_counts_json(counts: dict, real_counts: dict, category_exts: dict, hash
 
 
 def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
-    """Generate a server-side Cloudflare Pages Function / Worker and a Next.js API route that performs UA-based 302 redirects.
+    """Emit the server-side entry points (Pages Function + Workers entry) that
+    perform the random-image 302 redirects.
     """
     counts = meta.get('counts', {})
     h_count = counts.get('h', 0)
@@ -103,53 +104,85 @@ def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
     ext = meta.get('output_ext', DEFAULT_EXT)
 
     core_logic = f"""
-function isMobileDevice(ua) {{
-    if(!ua) return false;
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua.toLowerCase());
+// ---------------------------------------------------------------------------
+// Random image redirect endpoint.
+//
+// External contract (see README):
+//   ?img=h        -> 302 to a random horizontal image
+//   ?img=v        -> 302 to a random vertical image
+//   ?img=ua       -> 302, orientation chosen from the User-Agent
+//   anything else -> 200 plus a plain-text usage notice
+//
+// Images are served from /<dir>/<hex><ext>, one file per hash slot. The slot
+// count is the whole hash space (16 ** hash length), and gen_img.py fills every
+// slot at build time, so any randomly chosen slot is guaranteed to exist.
+// ---------------------------------------------------------------------------
+
+const HASH_LENGTH = {hl};
+const IMAGE_EXT = '{ext}';
+
+const TARGETS = {{
+    h: {{ dir: 'h', slots: {h_count}, label: 'horizontal' }},
+    v: {{ dir: 'v', slots: {v_count}, label: 'vertical' }},
+}};
+
+const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
+
+const CORS_HEADERS = {{ 'Access-Control-Allow-Origin': '*' }};
+
+const USAGE_TEXT = [
+    '🖼️ 随机图片展示器',
+    '',
+    '使用方法:',
+    '• ?img=h - 获取横屏随机图片',
+    '• ?img=v - 获取竖屏随机图片',
+    '• ?img=ua - 根据设备类型自动选择图片',
+    '',
+].join('\\n');
+
+function randomImagePath(target) {{
+    const slot = Math.floor(Math.random() * target.slots);
+    const hex = slot.toString(16).padStart(HASH_LENGTH, '0');
+    return '/' + target.dir + '/' + hex + IMAGE_EXT;
 }}
 
-function hexName(idx) {{
-    return idx.toString(16).padStart({hl}, '0') + '{ext}';
+function resolveTarget(request) {{
+    const requested = new URL(request.url).searchParams.get('img');
+
+    if (requested === 'ua') {{
+        const ua = request.headers.get('User-Agent') || '';
+        return MOBILE_UA.test(ua) ? TARGETS.v : TARGETS.h;
+    }}
+
+    return Object.prototype.hasOwnProperty.call(TARGETS, requested) ? TARGETS[requested] : null;
 }}
 
-async function handleRequest(request) {{
+function handleRequest(request) {{
     try {{
-        const url = new URL(request.url);
-        const img = url.searchParams.get('img');
+        const target = resolveTarget(request);
 
-        const maxH = {h_count};
-        const maxV = {v_count};
-
-        if(img === 'h') {{
-            if(!maxH) return new Response('No horizontal images', {{status:404}});
-            const idx = Math.floor(Math.random()*maxH);
-            const location = '/h/' + hexName(idx);
-            return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
-        }} else if(img === 'v') {{
-            if(!maxV) return new Response('No vertical images', {{status:404}});
-            const idx = Math.floor(Math.random()*maxV);
-            const location = '/v/' + hexName(idx);
-            return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
-        }} else if(img === 'ua') {{
-            const ua = request.headers.get('User-Agent') || '';
-            if(isMobileDevice(ua)) {{
-                if(!maxV) return new Response('No vertical images', {{status:404}});
-                const idx = Math.floor(Math.random()*maxV);
-                const location = '/v/' + hexName(idx);
-                return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
-            }} else {{
-                if(!maxH) return new Response('No horizontal images', {{status:404}});
-                const idx = Math.floor(Math.random()*maxH);
-                const location = '/h/' + hexName(idx);
-                return new Response(null, {{status:302, headers: {{ 'Location': location, 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' }}}});
-            }}
+        if (!target) {{
+            return new Response(USAGE_TEXT, {{
+                status: 200,
+                headers: {{ 'Content-Type': 'text/plain; charset=utf-8', ...CORS_HEADERS }},
+            }});
         }}
 
-        const help = `🖼️ 随机图片展示器\\n\\n使用方法:\\n• ?img=h - 获取横屏随机图片\\n• ?img=v - 获取竖屏随机图片\\n• ?img=ua - 根据设备类型自动选择图片\\n`;
-        return new Response(help, {{status:200, headers: {{ 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' }}}});
+        if (target.slots < 1) {{
+            return new Response('No ' + target.label + ' images', {{ status: 404, headers: CORS_HEADERS }});
+        }}
 
-    }} catch(err) {{
-        return new Response('Internal Error: ' + (err && err.message), {{status:500}});
+        return new Response(null, {{
+            status: 302,
+            headers: {{
+                Location: randomImagePath(target),
+                'Cache-Control': 'no-cache',
+                ...CORS_HEADERS,
+            }},
+        }});
+    }} catch (err) {{
+        console.error('pic handler failed:', err);
+        return new Response('Internal Error', {{ status: 500, headers: CORS_HEADERS }});
     }}
 }}
 """
