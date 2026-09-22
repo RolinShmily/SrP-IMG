@@ -17,7 +17,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # lockfiles
-package-lock.json
+# package-lock.json is committed on purpose: CI runs `npm ci` so every deploy
+# installs the exact locked versions instead of re-resolving version ranges.
+# Lockfiles for other package managers stay ignored.
 pnpm-lock.yaml
 yarn.lock
 bun.lockb

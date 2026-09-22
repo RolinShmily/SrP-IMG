@@ -1,0 +1,62 @@
+name: Deploy Worker
+
+on:
+  push:
+    branches: [main]
+    # Docs-only changes do not affect the deployed artifact.
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'NOTICE'
+  workflow_dispatch:
+
+# Never let two runs race to deploy the same Worker.
+concurrency:
+  group: deploy-worker-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy to img.srprolin.top
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # package-lock.json is committed, so `npm ci` installs the exact locked
+      # versions instead of re-resolving ranges on every run. --ignore-scripts
+      # skips dependency lifecycle scripts.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # Expands oriImg/ into public/<category>/<hex>.<ext> and rewrites
+      # functions/pic.js plus index.js, so the deployed Worker always matches
+      # what this generator would produce.
+      - name: Generate hashed image sets
+        run: python gen_img.py --hash-length 2
+
+      - name: Build static export
+        run: npm run build
+
+      # Route is declared in wrangler.jsonc: img.srprolin.top/* (zone srprolin.top).
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

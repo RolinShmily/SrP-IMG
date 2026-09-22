@@ -6,5 +6,11 @@
   "assets": {
     "directory": "./out",
     "binding": "ASSETS"
-  }
+  },
+  "routes": [
+    {
+      "pattern": "img.srprolin.top/*",
+      "zone_name": "srprolin.top"
+    }
+  ]
 }
