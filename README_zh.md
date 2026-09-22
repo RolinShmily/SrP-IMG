@@ -4,6 +4,14 @@
   <a href="./README.md">English</a> • <b>简体中文</b>
 </p>
 
+<p align="center">
+  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
+  <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
+  <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
+</p>
+
 基于 **Cloudflare Pages / Workers** 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为高性能动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
 
 ### ✨ 核心亮点
@@ -234,7 +242,9 @@ $$
 
 ### 🤝 参与贡献与安全
 
-欢迎参与贡献 —— 本地环境、素材要求与 PR 规范见 [CONTRIBUTING.zh.md](CONTRIBUTING.zh.md)。
+欢迎参与贡献 —— 本地环境、素材要求与 PR 规范见 [CONTRIBUTING.zh.md](CONTRIBUTING.zh.md)，
+行为准则见 [CODE_OF_CONDUCT.zh.md](CODE_OF_CONDUCT.zh.md)，版本变更记录见 [CHANGELOG.zh.md](CHANGELOG.zh.md)。
+
 如需报告安全漏洞，请按 [SECURITY.zh.md](SECURITY.zh.md) 私下联系，不要提交公开 Issue。
 
 ---

@@ -4,6 +4,14 @@
   <b>English</b> • <a href="./README_zh.md">简体中文</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
+  <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
+  <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
+</p>
+
 An unlimited-traffic, zero-cost, multi-category random image solution designed for deployment on **Cloudflare Pages / Workers**. Built with Python pre-build generation, it transforms static file storage into high-performance dynamic random image APIs alongside a modern waterfall image gallery web app.
 
 ### ✨ Core Highlights
@@ -235,8 +243,10 @@ The gallery component decouples data via the `typeToFolder` mapping table. To ad
 ### 🤝 Contributing & Security
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, image
-requirements and PR guidelines. To report a vulnerability, please follow
-[SECURITY.md](SECURITY.md) rather than opening a public issue.
+requirements and PR guidelines, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for how we treat
+each other. Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+
+To report a vulnerability, follow [SECURITY.md](SECURITY.md) rather than opening a public issue.
 
 ---
 
