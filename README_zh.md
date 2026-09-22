@@ -104,8 +104,6 @@ python3 gen_img.py --hash-length 2 && npm run build
 
 ### 💡 使用方式
 
-演示地址：`https://eo-img.srprolin.top` （支持方式 A 与方式 B）。
-
 #### 方式 A：服务端 API (JS 重定向)
 
 由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，适合在 Markdown 或外部网页中直接引用：

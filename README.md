@@ -104,8 +104,6 @@ Deploy command: `npx wrangler deploy`
 
 ### 💡 Usage & Integration
 
-Live Demo: `https://eo-img.srprolin.top` (Supports Methods A & B).
-
 #### Method A: Serverless API (JS Redirection)
 
 Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Ideal for Markdown files and external websites:

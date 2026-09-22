@@ -83,7 +83,7 @@ def build_counts_json(counts: dict, real_counts: dict, category_exts: dict, hash
         "category_exts": category_exts,
         "hash_length": hash_length,
         "output_ext": out_ext,
-        "generated_at": datetime.datetime.utcnow().isoformat() + 'Z'
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
     }
     ensure_dir(OUTPUT_DIR)
     path = OUTPUT_DIR / 'counts.json'
