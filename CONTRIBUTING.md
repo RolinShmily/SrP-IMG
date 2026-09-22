@@ -28,6 +28,7 @@ npm ci --ignore-scripts
 python gen_img.py --no-copy --hash-length 2
 
 npm run dev          # http://localhost:3000
+npm run lint         # eslint . (flat config in eslint.config.mjs)
 npm run build        # production static export into out/
 npm run typecheck    # tsc --noEmit; the build itself ignores type errors
 ```

@@ -6,11 +6,14 @@ import { useTheme } from 'next-themes'
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
 
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  // False during SSR and hydration, true afterwards — the same gate the
+  // previous `mounted` state provided, without a setState inside an effect.
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   if (!mounted) {
     return <div className="w-10 h-10" /> // Placeholder to avoid layout shift

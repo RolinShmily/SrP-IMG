@@ -1,9 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react"
 import Image from "next/image"
-import { Fancybox } from "@fancyapps/ui"
+import { Fancybox, type FancyboxOptions } from "@fancyapps/ui"
 import "@fancyapps/ui/dist/fancybox/fancybox.css"
+
+// Thumbs and Toolbar are plugin options that @fancyapps/ui v6 does not declare in
+// its shipped FancyboxOptions type, so they are spelled out explicitly here.
+type FancyboxBindOptions = Partial<FancyboxOptions> & {
+  Thumbs: { type: string }
+  Toolbar: { display: { left: string[]; middle: string[]; right: string[] } }
+}
 
 interface ImageGalleryProps {
   type: "horizontal" | "vertical" | "avatar" | "gif" | string;
@@ -39,10 +46,13 @@ export function ImageGallery({ type }: ImageGalleryProps) {
 
     const IMAGES_PER_PAGE = 20;
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // False during SSR and hydration, true afterwards. Keeps the first client
+  // render identical to the server's without calling setState inside an effect.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const getColumnCount = (type: string) => {
     if (type === "gif") return 5;
@@ -99,7 +109,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
 
         setMaxCount(count);
         setCountsLoaded(true);
-      } catch (error) {
+      } catch {
         setCountsLoaded(true);
       }
     };
@@ -132,20 +142,15 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     setLoading(false);
   }, [page, loading, maxCount, countsLoaded, hashLength, fileExt, folder]);
 
-  // Keep ref updated
-  loadImagesRef.current = loadImages;
-
+  // Keep the ref pointing at the latest callback for the observers below.
+  // It cannot be assigned during render, and an effect still runs before any
+  // observer callback fires.
   useEffect(() => {
-    setImages([]);
-    setPage(1);
-    setLoading(false);
-    setCountsLoaded(false);
-    setMaxCount(0);
-    setImageErrors(new Set());
-    setImageLoaded(new Set());
-    setShowScrollTop(false);
-    initialLoadDone.current = false;
-  }, [type]);
+    loadImagesRef.current = loadImages;
+  }, [loadImages]);
+
+  // No reset-on-type effect is needed here: app/page.tsx renders this component
+  // with key={galleryType}, so switching category remounts it with fresh state.
 
   // Scroll to top button visibility
   useEffect(() => {
@@ -207,33 +212,35 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   }, [loading, page, maxCount]);
 
   useEffect(() => {
-    if (galleryContainerRef.current) {
-      Fancybox.bind(galleryContainerRef.current, "[data-fancybox]", {
-        Thumbs: {
-          type: "classic",
+    // Capture the node so the cleanup below unbinds the same element.
+    const container = galleryContainerRef.current;
+    if (!container) return;
+
+    const options: FancyboxBindOptions = {
+      Thumbs: {
+        type: "classic",
+      },
+      Toolbar: {
+        display: {
+          left: ["infobar"],
+          middle: [
+            "zoomIn",
+            "zoomOut",
+            "toggle1to1",
+            "rotateCCW",
+            "rotateCW",
+            "flipX",
+            "flipY",
+          ],
+          right: ["slideshow", "fullscreen", "download", "thumbs", "close"],
         },
-        Toolbar: {
-          display: {
-            left: ["infobar"],
-            middle: [
-              "zoomIn",
-              "zoomOut",
-              "toggle1to1",
-              "rotateCCW",
-              "rotateCW",
-              "flipX",
-              "flipY",
-            ],
-            right: ["slideshow", "fullscreen", "download", "thumbs", "close"],
-          },
-        },
-      } as any);
-    }
+      },
+    };
+
+    Fancybox.bind(container, "[data-fancybox]", options);
 
     return () => {
-      if (galleryContainerRef.current) {
-        Fancybox.unbind(galleryContainerRef.current);
-      }
+      Fancybox.unbind(container);
     };
   }, [images]);
 

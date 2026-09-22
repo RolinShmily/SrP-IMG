@@ -4,6 +4,9 @@ import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
+// Next.js requires font loaders to be bound to a const, and the families are
+// applied through the `--font-sans` / `--font-mono` variables in globals.css,
+// so these bindings are intentionally unreferenced (hence the `_` prefix).
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 

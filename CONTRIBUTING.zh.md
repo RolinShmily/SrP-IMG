@@ -27,6 +27,7 @@ npm ci --ignore-scripts
 python gen_img.py --no-copy --hash-length 2
 
 npm run dev          # http://localhost:3000
+npm run lint         # eslint .（flat config 位于 eslint.config.mjs）
 npm run build        # 静态导出到 out/
 npm run typecheck    # tsc --noEmit；构建本身会忽略类型错误
 ```
