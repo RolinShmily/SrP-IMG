@@ -28,6 +28,7 @@ python gen_img.py --no-copy --hash-length 2
 
 npm run dev          # http://localhost:3000
 npm run build        # 静态导出到 out/
+npm run typecheck    # tsc --noEmit；构建本身会忽略类型错误
 ```
 
 > `gen_img.py` 会同步重写 `functions/pic.js` 与 `index.js`，使其与生成的哈希空间一致。

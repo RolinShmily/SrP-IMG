@@ -1,0 +1,58 @@
+name: CI
+
+# Pull requests only: pushes to main are already built and deployed by
+# deploy.yml, so running there too would just duplicate the work.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build static export
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # --no-copy writes placeholder files instead of duplicating every image,
+      # which keeps the job fast; the metadata and Worker entry points are
+      # generated exactly as they would be for a real deploy.
+      - name: Generate hashed image sets
+        run: python gen_img.py --no-copy --hash-length 2
+
+      # gen_img.py rewrites these two files, and CONTRIBUTING asks contributors
+      # to commit the result. Failing here catches a stale committed artifact.
+      - name: Verify generated entry points are in sync
+        run: git diff --exit-code -- functions/pic.js index.js
+
+      - name: Build static export
+        run: npm run build
+
+      # next.config.mjs sets typescript.ignoreBuildErrors, so type errors do not
+      # fail the build above — this step is the actual gate. It runs after the
+      # build because next build generates the gitignored next-env.d.ts.
+      - name: Typecheck
+        run: npm run typecheck

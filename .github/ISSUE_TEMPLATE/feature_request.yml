@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest an improvement to the gallery, the API or the build pipeline.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the **use case** before the implementation — it usually
+        changes what the right solution is. English or 简体中文 are both fine.
+
+        Scope note: this project is a static gallery plus a redirect endpoint
+        running on Cloudflare's free tier. Ideas that require a database, a
+        persistent server or a paid service are unlikely to be a good fit.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation you are in, not the solution yet.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you would like it to work, including any CLI flag or URL shape you have in mind.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Including anything in the current setup (e.g. Transform Rules) that partially covers this.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and this has not been requested yet.
+          required: true
+        - label: This does not require a database, a persistent server or a paid service.
+          required: true

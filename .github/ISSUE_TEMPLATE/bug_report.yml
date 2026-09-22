@@ -1,0 +1,79 @@
+name: Bug report
+description: The gallery or the /pic endpoint does not behave as documented.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report — English or 简体中文 are both fine.
+
+        - 🔐 **Security issues are not handled here** — report them privately via the
+          [security policy](https://github.com/RolinShmily/SrP-IMG/security/policy).
+        - 🖼️ **Image copyright complaints are not handled here** — see the
+          [License section](https://github.com/RolinShmily/SrP-IMG/blob/main/README.md#-license).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the exact URL, command or interaction, and what you expected instead.
+      placeholder: |
+        I requested /pic?img=h and got ...
+        I expected ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Where did it happen?
+      options:
+        - My own Cloudflare Workers deployment
+        - My own Cloudflare Pages deployment
+        - Local development (npm run dev)
+        - Other, or not sure
+    validations:
+      required: true
+
+  - type: input
+    id: category
+    attributes:
+      label: Affected category or endpoint
+      description: Which tab, folder or endpoint is involved?
+      placeholder: "h / v / a / gif, or /pic?img=ua"
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and OS, plus your Node version if you built locally.
+      placeholder: "Chrome 130 on Windows 11, Node 22.11.0"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues and this has not been reported yet.
+          required: true
+        - label: This is not a security report — those go to the security policy, not a public issue.
+          required: true
+        - label: This is not an image copyright complaint.
+          required: true

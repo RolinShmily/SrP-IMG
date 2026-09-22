@@ -29,6 +29,7 @@ python gen_img.py --no-copy --hash-length 2
 
 npm run dev          # http://localhost:3000
 npm run build        # production static export into out/
+npm run typecheck    # tsc --noEmit; the build itself ignores type errors
 ```
 
 > `gen_img.py` also rewrites `functions/pic.js` and `index.js` to match the
