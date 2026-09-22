@@ -232,6 +232,13 @@ $$
 
 ---
 
+### 🤝 参与贡献与安全
+
+欢迎参与贡献 —— 本地环境、素材要求与 PR 规范见 [CONTRIBUTING.zh.md](CONTRIBUTING.zh.md)。
+如需报告安全漏洞，请按 [SECURITY.zh.md](SECURITY.zh.md) 私下联系，不要提交公开 Issue。
+
+---
+
 ### 📜 开源协议
 
 本项目的**源代码**基于 **MIT 协议** 开源 —— 详见 [LICENSE](LICENSE) 全文。该协议**不覆盖图片资源**，具体说明见下文。欢迎 Star 关注！

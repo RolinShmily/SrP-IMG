@@ -232,6 +232,14 @@ The gallery component decouples data via the `typeToFolder` mapping table. To ad
 
 ---
 
+### 🤝 Contributing & Security
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, image
+requirements and PR guidelines. To report a vulnerability, please follow
+[SECURITY.md](SECURITY.md) rather than opening a public issue.
+
+---
+
 ### 📜 License
 
 This project's **source code** is licensed under the **MIT License** — see [LICENSE](LICENSE) for the full text. The license does **not** extend to the image assets, as set out below.
