@@ -1,4 +1,4 @@
-# SrP-IMG — Full-Featured Random Image API & Gallery
+# SrP-IMG — Random Image API & Gallery
 
 <p align="center">
   <b>English</b> • <a href="./README_zh.md">简体中文</a>
@@ -12,15 +12,16 @@
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
 </p>
 
-An unlimited-traffic, zero-cost, multi-category random image solution designed for deployment on **Cloudflare Pages / Workers**. Built with Python pre-build generation, it transforms static file storage into high-performance dynamic random image APIs alongside a modern waterfall image gallery web app.
+A lightweight, serverless multi-category random image API and visual gallery built on **Cloudflare Workers / Pages**. It uses Python pre-build hashing to distribute static images across deterministic random slots, offering low latency and zero maintenance.
 
-### ✨ Core Highlights
+### ✨ Core Features
 
-* **Zero-Cost Architecture**: Fully serverless and hosted on Cloudflare Pages/Workers — no traditional servers or databases required.
-* **Smart Multi-Category Support**: Out-of-the-box support for `h` (landscape/horizontal), `v` (portrait/vertical), and custom categories (e.g., `gif`, `a` for avatars, `wallpaper`).
-* **Dynamic Suffix Resolution**: `h` and `v` categories enforce `.jpg` for universal API compatibility; custom categories automatically detect and preserve original file extensions (e.g., `.gif`, `.png`).
-* **Automated Gallery Adaptation**: The Next.js frontend automatically loads `counts.json` to adapt categories, item counts, and image extensions without manual UI code changes.
-* **Dual Access Modes**: Supports serverless JS redirection (API Mode) and edge Transform Rules rewrite (Transparent Mode).
+* **Serverless Architecture**: Hosted on Cloudflare Workers / Pages — no dedicated servers or databases to maintain.
+* **Fully Automated Multi-Category Support**: Supports `h` (landscape), `v` (portrait), `a` (avatars), `gif` (animated GIFs), and custom folders with zero frontend code modification.
+* **Auto Format Detection**: Enforces `.jpg` for `h/v` for universal API client compatibility, while automatically detecting and preserving original extensions (e.g., `.gif`, `.jpeg`, `.png`) for custom categories.
+* **Adaptive Waterfall Gallery**: Automatically derives categories, item counts, and aspect ratios from build metadata; supports English/Chinese i18n, dark/light themes, and Fancybox previews.
+* **Dual Access Modes**: Server-side 302 redirection (API Mode) and Cloudflare Transform Rules edge rewrite (Transparent Mode).
+* **Built-in Security Boundaries**: Referer hotlinking protection (allowing empty Referer for Markdown/direct access) and dynamic CORS policy.
 
 ---
 
@@ -38,11 +39,14 @@ An unlimited-traffic, zero-cost, multi-category random image solution designed f
 ├── functions/              # Cloudflare Pages Functions
 │   └── pic.js              # Server-side redirect API endpoint (Pages)
 ├── app/                    # Next.js App Router
-│   ├── page.tsx            # Main gallery page
-│   └── layout.tsx          # Root layout & global configuration
+│   ├── page.tsx            # Home showcase & live interactive demo
+│   ├── gallery/            # Dedicated waterfall gallery page
+│   ├── settings/           # API guide & edge configuration center
+│   └── layout.tsx          # Root layout & global metadata
 ├── components/             # React UI components
-│   └── image-gallery.tsx   # Core waterfall gallery component (mapping logic)
-├── gen_img.py              # Build engine: hash expansion, suffix detection & metadata export
+│   ├── image-gallery.tsx   # Core waterfall gallery component
+│   └── api-panel.tsx       # Interactive API copy & rule generator panel
+├── gen_img.py              # Build script: asset scanning, hash mapping & metadata generation
 ├── index.js                # Cloudflare Workers entrypoint
 ├── wrangler.jsonc          # Cloudflare Workers configuration
 ├── README.md               # English documentation
@@ -63,30 +67,37 @@ An unlimited-traffic, zero-cost, multi-category random image solution designed f
 
 Create category folders inside `oriImg/` in the project root:
 
-* **API Categories**: Create `h` and `v` directories and place landscape/portrait images inside (these are output as `.jpg` for broad API compatibility).
-* **Custom Categories**: Create folders such as `gif`, `anime`, or `a`. The script automatically takes the extension of the first image in each folder as the output format.
+* **Built-in Categories**: Place avatar images in `a/`, GIF animations in `gif/`, landscape images in `h/`, and portrait images in `v/`. Categories `h` and `v` enforce `.jpg` for universal API compatibility.
+* **Custom Categories**: Create any folder such as `oriImg/wallpaper/` or `oriImg/anime/`. The prebuild engine automatically detects the folder and preserves the file extension of the first image.
 
-#### 2. Local Testing
+#### 2. Build & Deployment Commands
+
+The project includes convenient npm scripts for the workflow:
+
+| Command | Description |
+| :--- | :--- |
+| `npm run gen` | Execute asset hash diffusion and entry generation (`python gen_img.py --hash-length 2`) |
+| `npm run build:all` | One-click command to run pre-build generation and Next.js static build (`npm run gen && npm run build`) |
+| `npm run deploy` | Execute Wrangler deployment to Cloudflare Worker (`wrangler deploy`) |
+| `npm run dev` | Start local Next.js development server |
+| `npm run build` | Build Next.js static export (`out/`) |
+
+#### 3. Local Testing
 
 To preview the gallery locally:
 
 ```bash
-# Use --no-copy to quickly generate virtual metadata for testing
+# Use --no-copy to quickly generate virtual metadata for testing without copying files
 python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
 
-#### 3. Cloudflare Pages / Workers Production Build
+#### 4. Cloudflare Pages / Workers Production Build
 
 Configure Cloudflare Pages as follows:
 
 * **Framework Preset**: `Next.js`
-* **Build Command**:
-
-```bash
-python3 gen_img.py --hash-length 2 && npm run build
-```
-
+* **Build Command**: `npm run build:all` (or `python3 gen_img.py --hash-length 2 && npm run build`)
 * **Build Output Directory**: `out`
 * **Environment**: Python 3.8+
 
@@ -106,7 +117,7 @@ If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
 ```
 
 *Note: Replace `name` with your Worker name, and set `compatibility_date` to your deployment date.*
-Deploy command: `npx wrangler deploy`
+Deploy command: `npm run deploy` (or `npx wrangler deploy`)
 
 ---
 
@@ -114,13 +125,17 @@ Deploy command: `npx wrangler deploy`
 
 #### Method A: Serverless API (JS Redirection)
 
-Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Ideal for Markdown files and external websites:
+Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Supports both `/pic` and `/api/pic` endpoints. Ideal for Markdown files and external websites:
 
-| Endpoint        | Target / Behavior             | Description                                         |
-| :-------------- | :---------------------------- | :-------------------------------------------------- |
-| `/pic?img=h`  | 302 Redirect to`/h/xxx.jpg` | Random landscape image                              |
-| `/pic?img=v`  | 302 Redirect to`/v/xxx.jpg` | Random portrait image                               |
-| `/pic?img=ua` | Smart UA-based redirection    | Returns vertical for mobile, horizontal for desktop |
+| Endpoint | Target / Behavior | Description |
+| :--- | :--- | :--- |
+| `/pic?img=a` | 302 Redirect to `/a/xxx.jpeg` | Random avatar image |
+| `/pic?img=gif` | 302 Redirect to `/gif/xxx.gif` | Random GIF animation |
+| `/pic?img=h` | 302 Redirect to `/h/xxx.jpg` | Random landscape image |
+| `/pic?img=v` | 302 Redirect to `/v/xxx.jpg` | Random portrait image |
+| `/pic?img=ua` | Smart UA-based redirection | Returns vertical for mobile, horizontal for desktop |
+
+> **Custom Categories**: Place images in `oriImg/<custom-category>` (e.g., `oriImg/wallpaper`). The prebuild engine automatically extracts metadata and enables `?img=<custom-category>` out of the box without code modifications.
 
 #### Method B: Visual Web Gallery
 
@@ -181,6 +196,19 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ---
 
+### 🛡️ Security Boundaries & Anti-Hotlinking
+
+The Worker and Pages Functions endpoints include built-in security and access control guardrails:
+
+* **Referer Hotlink Protection**:
+  * **Open for Direct & Markdown Access**: Empty or missing `Referer` headers are allowed by default to support local Markdown document previews, note-taking apps, terminal commands (e.g., `curl`), and direct browser address bar visits.
+  * **Domain Whitelist for Web Embedding**: When a `Referer` header is present (such as an `<img>` tag embedded in an external webpage), requests are restricted to `*.srprolin.top` and `*.srprolin.com` domains (along with `localhost` / `127.0.0.1` for local development). Unauthorized referrers are blocked with `403 Forbidden`.
+* **CORS Policy**:
+  * Cross-origin asynchronous requests (fetch / XHR) are only permitted from whitelisted sites (`*.srprolin.top`, `*.srprolin.com`, and `localhost`).
+  * Authorized origins receive dynamic `Access-Control-Allow-Origin` and `Vary: Origin` response headers along with preflight `OPTIONS` handling. Unauthorized origins do not receive CORS authorization headers.
+
+---
+
 ### ⚙️ Technical Details
 
 #### Build Engine: `gen_img.py`
@@ -215,7 +243,7 @@ S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)
 $$
 
 * $S_{total}$: Total disk space consumed after build.
-* $L$: Specified `hash-length` (default: 3).
+* $L$: Specified `hash-length` (default: 2).
 * $\bar{S}_c$: Average size of valid images ($\le 5\text{MB}$) in category $c$.
 * $n$: Total number of category folders.
 
@@ -230,13 +258,13 @@ $$
 
 ---
 
-### 🎨 Gallery Mapping Table
+### 🎨 Category Extension
 
-The gallery component decouples data via the `typeToFolder` mapping table. To add a new category:
+The gallery, home page, and API configuration panel are dynamically driven by `counts.json`. To add a new category:
 
-1. Create a new folder under `oriImg/`.
-2. Add a corresponding tab/button in `app/page.tsx`.
-   The frontend will dynamically read the extension and count from `counts.json`.
+1. Create a new category subfolder under `oriImg/` and place your images inside.
+2. Run the build (`npm run build:all`) or push code to trigger automated deployment.
+3. The build script automatically detects image dimensions, file extensions, and emits updated metadata. The entire frontend updates automatically with **zero code modifications**.
 
 ---
 

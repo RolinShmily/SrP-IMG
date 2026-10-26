@@ -1,5 +1,4 @@
 
-
 // ---------------------------------------------------------------------------
 // Random image redirect endpoint.
 //
@@ -9,7 +8,14 @@
 //   ?img=a        -> 302 to a random avatar image
 //   ?img=gif      -> 302 to a random gif image
 //   ?img=ua       -> 302, orientation chosen from the User-Agent
-//   anything else -> 200 plus a plain-text usage notice
+//   anything else -> 404 Not Found
+//
+// Security & Access Control:
+//   - Referer Hotlinking Protection: Whitelisted hostnames (*.srprolin.top,
+//     *.srprolin.com, localhost, 127.0.0.1) or empty/missing Referer allowed;
+//     disallowed Referer requests receive 403 Forbidden.
+//   - Dynamic CORS: Whitelisted Origins receive Access-Control-Allow-Origin
+//     and Vary: Origin headers; OPTIONS preflight returns 204.
 //
 // Images are served from /<dir>/<hex><ext>, one file per hash slot. The slot
 // count is the whole hash space (16 ** hash length), and gen_img.py fills every
@@ -28,19 +34,74 @@ const TARGETS = {
 
 const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
 
-const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*' };
+function isAllowedHost(hostname) {
+    if (!hostname) return false;
+    const host = hostname.toLowerCase();
+    return (
+        host === 'srprolin.top' ||
+        host.endsWith('.srprolin.top') ||
+        host === 'srprolin.com' ||
+        host.endsWith('.srprolin.com') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+    );
+}
 
-const USAGE_TEXT = [
-    '🖼️ 随机图片展示器',
-    '',
-    '使用方法:',
-    '• ?img=a - 获取头像随机图片',
-    '• ?img=gif - 获取GIF 随机动图',
-    '• ?img=h - 获取横屏随机图片',
-    '• ?img=v - 获取竖屏随机图片',
-    '• ?img=ua - 根据设备类型自动选择横屏/竖屏图片',
-    '',
-].join('\n');
+function checkReferer(request) {
+    const referer = request.headers.get('Referer');
+    if (!referer || referer.trim() === '') {
+        return true;
+    }
+    try {
+        const url = new URL(referer);
+        return isAllowedHost(url.hostname);
+    } catch {
+        return false;
+    }
+}
+
+function getCorsHeaders(request) {
+    const origin = request.headers.get('Origin');
+    if (!origin) {
+        return {};
+    }
+    try {
+        const url = new URL(origin);
+        if (isAllowedHost(url.hostname)) {
+            return {
+                'Access-Control-Allow-Origin': origin,
+                'Vary': 'Origin',
+            };
+        }
+    } catch {
+        // Ignore invalid Origin URL
+    }
+    return {};
+}
+
+function handleOptions(request) {
+    const origin = request.headers.get('Origin');
+    if (origin) {
+        try {
+            const url = new URL(origin);
+            if (isAllowedHost(url.hostname)) {
+                return new Response(null, {
+                    status: 204,
+                    headers: {
+                        'Access-Control-Allow-Origin': origin,
+                        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                        'Access-Control-Allow-Headers': request.headers.get('Access-Control-Request-Headers') || '*',
+                        'Access-Control-Max-Age': '86400',
+                        'Vary': 'Origin',
+                    },
+                });
+            }
+        } catch {
+            // Ignore invalid Origin URL
+        }
+    }
+    return new Response(null, { status: 204 });
+}
 
 function randomImagePath(target) {
     const slot = Math.floor(Math.random() * target.slots);
@@ -61,17 +122,32 @@ function resolveTarget(request) {
 
 function handleRequest(request) {
     try {
+        if (request.method === 'OPTIONS') {
+            return handleOptions(request);
+        }
+
+        if (!checkReferer(request)) {
+            return new Response('403 Forbidden: Hotlinking not allowed', {
+                status: 403,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            });
+        }
+
+        const corsHeaders = getCorsHeaders(request);
         const target = resolveTarget(request);
 
         if (!target) {
-            return new Response(USAGE_TEXT, {
-                status: 200,
-                headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CORS_HEADERS },
+            return new Response('404 Not Found', {
+                status: 404,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders },
             });
         }
 
         if (target.slots < 1) {
-            return new Response('No ' + target.label + ' images', { status: 404, headers: CORS_HEADERS });
+            return new Response('404 Not Found', {
+                status: 404,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders },
+            });
         }
 
         return new Response(null, {
@@ -79,15 +155,14 @@ function handleRequest(request) {
             headers: {
                 Location: randomImagePath(target),
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-                ...CORS_HEADERS,
+                ...corsHeaders,
             },
         });
     } catch (err) {
         console.error('pic handler failed:', err);
-        return new Response('Internal Error', { status: 500, headers: CORS_HEADERS });
+        return new Response('Internal Error', { status: 500, headers: getCorsHeaders(request) });
     }
 }
-
 
 export function onRequest(context) {
     return handleRequest(context.request);

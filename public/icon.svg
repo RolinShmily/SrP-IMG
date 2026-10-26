@@ -1,26 +1,63 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
-    }
-  </style>
-  <g clip-path="url(#clip0_7960_43945)">
-    <rect class="background" width="180" height="180" rx="37" />
-    <g style="transform: scale(95%); transform-origin: center">
-      <path class="foreground"
-        d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
-      <path class="foreground"
-        d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
-    </g>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
+    <!-- Obsidian & Carbon Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#27272A" />
+      <stop offset="35%" stop-color="#18181B" />
+      <stop offset="100%" stop-color="#09090B" />
+    </linearGradient>
+
+    <!-- Solar Amber & Sunset Orange Accent Gradient -->
+    <linearGradient id="solarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="50%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+
+    <!-- Warm Gold Gradient for Aperture / Sun -->
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Photo Inner Clip -->
+    <clipPath id="innerPhotoClip">
+      <rect x="116" y="116" width="280" height="280" rx="36" />
     </clipPath>
   </defs>
+
+  <!-- Squircle Base (Filling frame with tight padding) -->
+  <rect x="12" y="12" width="488" height="488" rx="122" fill="url(#bgGrad)" />
+
+  <!-- Outer Glass Border Rim -->
+  <rect x="14" y="14" width="484" height="484" rx="120" fill="none" stroke="rgba(255, 255, 255, 0.16)" stroke-width="4" />
+
+  <!-- Back Layered Photo Card (Offset & subtle rotation) -->
+  <rect x="116" y="92" width="280" height="280" rx="40" fill="rgba(255, 255, 255, 0.09)" stroke="rgba(255, 255, 255, 0.18)" stroke-width="3" transform="rotate(-6 256 232)" />
+
+  <!-- Front Photo Frame Card -->
+  <rect x="104" y="104" width="304" height="304" rx="46" fill="#FFFFFF" />
+
+  <!-- Photo Area with Sunset Horizon Landscape -->
+  <g clip-path="url(#innerPhotoClip)">
+    <rect x="116" y="116" width="280" height="280" fill="#FAFAF9" />
+    
+    <!-- Radiant Golden Sun -->
+    <circle cx="196" cy="186" r="32" fill="url(#sunGrad)" />
+
+    <!-- Mountain 1 (Back, warm stone gray) -->
+    <path d="M100 396 L205 255 L310 396 Z" fill="#71717A" opacity="0.35" />
+    
+    <!-- Mountain 2 (Front, Charcoal / Carbon) -->
+    <path d="M165 396 L270 220 L385 396 Z" fill="#18181B" />
+
+    <!-- Mountain 3 (Right, Sunset Amber Glow Peak) -->
+    <path d="M250 396 L335 285 L415 396 Z" fill="url(#solarGrad)" opacity="0.95" />
+  </g>
+
+  <!-- Amber Sparkle Star (Top Right Corner) -->
+  <path d="M400 76 C400 110 415 125 449 125 C415 125 400 140 400 174 C400 140 385 125 351 125 C385 125 400 110 400 76 Z" fill="url(#solarGrad)" />
+
+  <!-- Diamond Sparkle Accent (Bottom Left) -->
+  <path d="M84 366 C84 382 92 390 108 390 C92 390 84 398 84 414 C84 398 76 390 60 390 C76 390 84 382 84 366 Z" fill="rgba(255, 255, 255, 0.7)" />
 </svg>

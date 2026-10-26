@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react"
 import Image from "next/image"
+import { Copy, Check } from "lucide-react"
 import { Fancybox, type FancyboxOptions } from "@fancyapps/ui"
 import "@fancyapps/ui/dist/fancybox/fancybox.css"
 
@@ -32,6 +33,8 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const [imageLoaded, setImageLoaded] = useState<Set<number>>(new Set());
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [copiedImageId, setCopiedImageId] = useState<number | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const animateObserverRef = useRef<IntersectionObserver | null>(null);
@@ -41,10 +44,11 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const galleryContainerRef = useRef<HTMLDivElement>(null);
   const loadImagesRef = useRef<(() => void) | null>(null);
 
-  const [hashLength, setHashLength] = useState<number>(3);
+  const [hashLength, setHashLength] = useState<number>(2);
   const [fileExt, setFileExt] = useState<string>(".jpg");
+  const [serverAspect, setServerAspect] = useState<string | undefined>(undefined);
 
-    const IMAGES_PER_PAGE = 20;
+  const IMAGES_PER_PAGE = 20;
 
   // False during SSR and hydration, true afterwards. Keeps the first client
   // render identical to the server's without calling setState inside an effect.
@@ -54,8 +58,8 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     () => false,
   );
 
-  const getColumnCount = (type: string) => {
-    if (type === "gif") return 5;
+  const getColumnCount = (typeStr: string) => {
+    if (typeStr === "gif" || folder === "gif") return 5;
     if (typeof window === "undefined") return 3;
     const width = window.innerWidth;
     if (width < 768) return 2;
@@ -72,26 +76,16 @@ export function ImageGallery({ type }: ImageGalleryProps) {
 
     const folder = typeToFolder[type] || type;
 
-    // 根据类型设置不同的宽高比
-    const getImageDimensions = () => {
-      switch (type) {
-        case "h":
-        case "horizontal": // 横屏 4:3
-          return { width: 800, height: 600, aspectRatio: "4/3" };
-        case "v":
-        case "vertical": // 竖屏 9:16
-          return { width: 450, height: 800, aspectRatio: "9/16" };
-        case "a":
-        case "avatar": // 头像 1:1
-          return { width: 800, height: 800, aspectRatio: "1/1" };
-        case "gif":
-        default: // GIF 不限制比例，只限制最大尺寸
-          return { width: 1000, height: 1000, aspectRatio: undefined };
-      }
-    };
+    // 优先采用从 counts.json 自动嗅探计算的比例；无配置时回退到默认比例
+    const aspectRatio = serverAspect !== undefined ? serverAspect : (
+      (type === "h" || type === "horizontal") ? "4/3" :
+      (type === "v" || type === "vertical") ? "9/16" :
+      (type === "a" || type === "avatar") ? "1/1" :
+      undefined
+    );
 
-
-    const { width: imgWidth, height: imgHeight, aspectRatio } = getImageDimensions();
+    const imgWidth = 800;
+    const imgHeight = 800;
 
 
   useEffect(() => {
@@ -108,6 +102,14 @@ export function ImageGallery({ type }: ImageGalleryProps) {
           setFileExt(data.category_exts[folder]);
         } else {
           setFileExt(data.output_ext || ".jpg");
+        }
+
+        // 动态读取服务端 Python 自动嗅探提取的真实比例
+        if (data.category_aspects && folder in data.category_aspects) {
+          setServerAspect(data.category_aspects[folder] || undefined);
+        } else if (Array.isArray(data.categories)) {
+          const found = data.categories.find((c: { key: string; aspect?: string | null }) => c.key === folder);
+          setServerAspect(found?.aspect || undefined);
         }
 
         setMaxCount(count);
@@ -172,6 +174,58 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   const handleImageLoad = (imageId: number) => {
     setImageLoaded((prev) => new Set(prev).add(imageId));
   };
+
+  const handleCopyDirectUrl = useCallback(async (imageUrl: string, id: number) => {
+    const origin =
+      typeof window !== "undefined" && window.location.origin
+        ? window.location.origin
+        : "https://img.srprolin.com";
+    const fullUrl = imageUrl.startsWith("http") ? imageUrl : `${origin}${imageUrl}`;
+
+    let success = false;
+    if (navigator?.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        success = true;
+      } catch {
+        // fallback below
+      }
+    }
+
+    if (!success && typeof document !== "undefined") {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = fullUrl;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        success = true;
+      } catch (e) {
+        console.error("Copy fallback failed:", e);
+      }
+    }
+
+    if (success) {
+      setCopiedImageId(id);
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopiedImageId(null);
+      }, 2000);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (
@@ -282,7 +336,9 @@ export function ImageGallery({ type }: ImageGalleryProps) {
   }, [images, mounted]);
 
   const renderMasonryLayout = () => {
-    const columnCount = mounted ? getColumnCount(type) : (type === "gif" ? 5 : 3);
+    const columnCount = mounted
+      ? getColumnCount(type)
+      : (type === "gif" || folder === "gif" ? 5 : 3);
     const columns: ImageItem[][] = Array.from(
       { length: columnCount },
       () => []
@@ -305,8 +361,23 @@ export function ImageGallery({ type }: ImageGalleryProps) {
                 style={{ transitionDelay: `${(indexInSection % 6) * 80}ms` }}
               >
                 {imageErrors.has(image.id) ? (
-                  <div className="aspect-square flex items-center justify-center text-muted-foreground">
-                    <span className="text-sm">加载失败</span>
+                  <div
+                    className="relative overflow-hidden rounded-lg bg-muted flex items-center justify-center aspect-square"
+                    style={aspectRatio ? { aspectRatio } : undefined}
+                  >
+                    <Image
+                      src="/placeholder.svg"
+                      alt={`占位图 #${image.id}`}
+                      width={imgWidth}
+                      height={imgHeight}
+                      className="w-full h-full object-cover opacity-60"
+                      style={aspectRatio ? { aspectRatio } : undefined}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground/80 font-mono bg-background/80 px-2 py-0.5 rounded shadow-xs">
+                        #{image.id} 占位图
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <a
@@ -322,7 +393,7 @@ export function ImageGallery({ type }: ImageGalleryProps) {
                       height={imgHeight}
                       className={`
                         w-full object-cover
-                        transition-all duration-700 ease-out
+                        transition-all duration-500 ease-out transform-gpu will-change-transform
                         group-hover:scale-105
                         ${imageLoaded.has(image.id) ? "scale-100 blur-0" : "scale-105 blur-xl"}
                       `}
@@ -342,6 +413,31 @@ export function ImageGallery({ type }: ImageGalleryProps) {
                     <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                       #{image.id}
                     </div>
+
+                    {/* 左上角复制直链按钮（移动端常驻微透明，桌面端悬停浮现） */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleCopyDirectUrl(image.url, image.id);
+                      }}
+                      className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-background/90 hover:bg-background text-foreground text-xs font-medium backdrop-blur-md shadow-xs opacity-90 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-all duration-200 cursor-pointer border border-border/40"
+                      title="复制图片直链"
+                      aria-label={`复制图片 #${image.id} 直链`}
+                    >
+                      {copiedImageId === image.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">已复制</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-[11px]">复制直链</span>
+                        </>
+                      )}
+                    </button>
                   </>
                 )}
               </div>
@@ -365,6 +461,17 @@ export function ImageGallery({ type }: ImageGalleryProps) {
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
             <span>加载中...</span>
+          </div>
+        )}
+        {countsLoaded && maxCount === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <Copy className="w-5 h-5 opacity-40" />
+            </div>
+            <p className="text-base font-medium text-foreground">该分类暂无有效图片素材</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+              请检查 <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono">oriImg/{folder}/</code> 目录是否存在且包含单张体积 ≤ 5MB 的图片，随后执行构建。
+            </p>
           </div>
         )}
         {(page - 1) * IMAGES_PER_PAGE >= maxCount &&

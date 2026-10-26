@@ -1,4 +1,46 @@
 {
+  "categories": [
+    {
+      "key": "a",
+      "name_zh": "头像素材",
+      "name_en": "Avatar",
+      "ext": ".jpeg",
+      "count": 114,
+      "slots": 256,
+      "aspect": "1/1",
+      "aspect_hint": "1:1"
+    },
+    {
+      "key": "gif",
+      "name_zh": "动态动图",
+      "name_en": "GIF",
+      "ext": ".gif",
+      "count": 10,
+      "slots": 256,
+      "aspect": null,
+      "aspect_hint": "动态格式"
+    },
+    {
+      "key": "h",
+      "name_zh": "横屏壁纸",
+      "name_en": "Landscape",
+      "ext": ".jpg",
+      "count": 138,
+      "slots": 256,
+      "aspect": "4/3",
+      "aspect_hint": "4:3"
+    },
+    {
+      "key": "v",
+      "name_zh": "竖屏壁纸",
+      "name_en": "Portrait",
+      "ext": ".jpg",
+      "count": 67,
+      "slots": 256,
+      "aspect": "9/16",
+      "aspect_hint": "9:16"
+    }
+  ],
   "counts": {
     "a": 256,
     "gif": 256,
@@ -16,6 +58,12 @@
     "gif": ".gif",
     "h": ".jpg",
     "v": ".jpg"
+  },
+  "category_aspects": {
+    "a": "1/1",
+    "gif": null,
+    "h": "4/3",
+    "v": "9/16"
   },
   "hash_length": 2,
   "output_ext": ".jpg",

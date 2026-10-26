@@ -33,6 +33,8 @@ bun.lock
 
 .claude
 .memory
+.archify/
+dev.log
 
 # typescript
 *.tsbuildinfo

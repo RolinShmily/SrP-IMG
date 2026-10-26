@@ -1,4 +1,4 @@
-# SrP-IMG — 全功能随机图片 API & 画廊
+# SrP-IMG — 随机图片 API & 画廊
 
 <p align="center">
   <a href="./README.md">English</a> • <b>简体中文</b>
@@ -12,15 +12,16 @@
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
 </p>
 
-基于 **Cloudflare Pages / Workers** 部署的**无限流量、零成本、多分类**随机图片解决方案。它通过 Python 预构建技术，将静态存储转化为高性能动态随机 API，并提供一个现代化的瀑布流画廊展示界面。
+基于 **Cloudflare Workers / Pages** 构建的轻量级无服务器多分类随机图片 API 与画廊系统。利用 Python 离线预构建技术将静态素材散列为随机访问槽位，兼顾边缘快速响应与免维护特性。
 
-### ✨ 核心亮点
+### ✨ 核心特性
 
-* **零成本方案**：完全托管于 Cloudflare Pages/Workers，无需传统服务器，无需数据库。
-* **智能多分类**：支持 `h` (横屏)、`v` (竖屏) 以及自定义分类（如 `gif`、`a` 头像、`wallpaper` 壁纸）。
-* **动态后缀支持**：`h/v` 固定为 `.jpg` 确保 API 客户端通用兼容性，其他自定义分类自动探测并保留原图后缀（如 `.gif`, `.png`）。
-* **自动化画廊**：前端画廊通过读取 `counts.json` 自动适配分类、数量和文件格式，无需手动修改前端展示代码。
-* **双模式调用**：支持服务端 JS 重定向 (API 模式) 与边缘 URL 重写 (无感模式)。
+* **无服务器架构**：托管于 Cloudflare Workers / Pages，无需自建传统服务器，无需数据库。
+* **多分类全自动联动**：支持 `h` (横屏)、`v` (竖屏)、`a` (头像)、`gif` (动图) 以及自定义分类，前端全流程动态感知，后续扩充素材目录无需修改前端代码。
+* **格式自动适配**：`h/v` 统一规范为 `.jpg` 保证通用兼容性，其余分类自动嗅探并保留原图扩展名（如 `.gif`, `.jpeg`, `.png`）。
+* **自适应瀑布流画廊**：前端自动根据元数据适配分类数量与比例，支持中英双语切换、深浅主题与 Fancybox 交互预览。
+* **双模式调用**：支持通用 302 服务端重定向（API 模式）与 Cloudflare Transform Rules 边缘重写（无感模式）。
+* **内置安全边界**：支持 Referer 防盗链白名单机制（放行空 Referer）与动态 CORS 跨域控制。
 
 ---
 
@@ -38,11 +39,14 @@
 ├── functions/              # Cloudflare Pages Functions
 │   └── pic.js              # 服务端随机重定向接口（Pages）
 ├── app/                    # Next.js App Router
-│   ├── page.tsx            # 画廊主页面
+│   ├── page.tsx            # 首页全景与实时体验
+│   ├── gallery/            # 独立瀑布流画廊页面
+│   ├── settings/           # API 调用与配置中心
 │   └── layout.tsx          # 根布局与元数据配置
 ├── components/             # React UI 组件
-│   └── image-gallery.tsx   # 核心瀑布流画廊组件（映射表逻辑）
-├── gen_img.py              # 构建大脑：哈希扩散、后缀识别与元数据导出
+│   ├── image-gallery.tsx   # 核心瀑布流画廊组件
+│   └── api-panel.tsx       # API 快捷调用与规则参考面板
+├── gen_img.py              # 构建脚本：素材扫描、哈希映射与元数据生成
 ├── index.js                # Cloudflare Workers 入口
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
 ├── README.md               # 英文说明文档
@@ -63,30 +67,37 @@
 
 在根目录 `oriImg/` 下创建分类文件夹：
 
-* **API 专用分类**：创建 `h` 和 `v` 目录，放入横/竖屏图片（输出时会统一固定为 `.jpg`，确保兼容所有 API 客户端）。
-* **自定义分类**：创建如 `gif`、`anime`、`a` 等目录。脚本会自动取该目录首张图片的后缀作为该分类的输出后缀。
+* **预设分类**：`a/`（头像）、`gif/`（动图）、`h/`（横屏）与 `v/`（竖屏）。其中 `h` 与 `v` 输出时会统一固定为 `.jpg`，确保兼容所有 API 客户端。
+* **自定义分类**：创建如 `oriImg/wallpaper/` 或 `oriImg/anime/` 等任意目录。脚本会自动取该目录首张图片的后缀作为该分类的输出后缀。
 
-#### 2. 本地测试
+#### 2. 构建与部署命令
+
+项目内置了便捷的 npm scripts 命令流：
+
+| 命令 | 说明 |
+| :--- | :--- |
+| `npm run gen` | 执行素材哈希扩散与接口入口生成 (`python gen_img.py --hash-length 2`) |
+| `npm run build:all` | 一键完成预构建与 Next.js 静态打包 (`npm run gen && npm run build`) |
+| `npm run deploy` | 执行 Wrangler 部署至 Cloudflare Worker (`wrangler deploy`) |
+| `npm run dev` | 启动本地 Next.js 开发调试服务 |
+| `npm run build` | 执行 Next.js 静态编译与导出 (`out/`) |
+
+#### 3. 本地测试
 
 如果您想在本地预览画廊效果，请执行：
 
 ```bash
-# 使用 --no-copy 快速生成虚拟元数据进行测试
+# 使用 --no-copy 快速生成虚拟元数据进行测试（不复制实际图片）
 python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
 
-#### 3. Cloudflare Pages / Workers 生产构建
+#### 4. Cloudflare Pages / Workers 生产构建
 
 在 Cloudflare Pages 仪表板配置如下：
 
 * **框架预设**：`Next.js`
-* **构建命令**：
-
-```bash
-python3 gen_img.py --hash-length 2 && npm run build
-```
-
+* **构建命令**：`npm run build:all`（或 `python3 gen_img.py --hash-length 2 && npm run build`）
 * **输出目录**：`out`
 * **环境变量**：确保 Python 环境为 3.8+
 
@@ -106,7 +117,7 @@ python3 gen_img.py --hash-length 2 && npm run build
 ```
 
 *注意：请将 `name` 改为你要部署的 Worker 名称；将 `compatibility_date` 改为你的部署日期。*
-部署命令：`npx wrangler deploy`
+部署命令：`npm run deploy`（或 `npx wrangler deploy`）
 
 ---
 
@@ -114,13 +125,17 @@ python3 gen_img.py --hash-length 2 && npm run build
 
 #### 方式 A：服务端 API (JS 重定向)
 
-由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，适合在 Markdown 或外部网页中直接引用：
+由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，同时支持 `/pic` 与 `/api/pic` 路径，适合在 Markdown 或外部网页中直接引用：
 
-| 功能描述              | 调用地址        | 返回结果                       |
-| :-------------------- | :-------------- | :----------------------------- |
-| **随机横图**    | `/pic?img=h`  | 302 重定向至`/h/xxx.jpg`     |
-| **随机竖图**    | `/pic?img=v`  | 302 重定向至`/v/xxx.jpg`     |
+| 功能描述 | 调用地址 | 返回结果 |
+| :--- | :--- | :--- |
+| **随机头像** | `/pic?img=a` | 302 重定向至 `/a/xxx.jpeg` |
+| **随机 GIF 动图** | `/pic?img=gif` | 302 重定向至 `/gif/xxx.gif` |
+| **随机横图** | `/pic?img=h` | 302 重定向至 `/h/xxx.jpg` |
+| **随机竖图** | `/pic?img=v` | 302 重定向至 `/v/xxx.jpg` |
 | **UA 智能分流** | `/pic?img=ua` | 手机端返回竖图，电脑端返回横图 |
+
+> **自定义分类支持**：用户在 `oriImg/<自定义分类名>`（例如 `oriImg/wallpaper`）放置图片后，预构建会自动支持 `?img=<自定义分类名>`，无需手动修改重定向逻辑代码。
 
 #### 方式 B：前端可视化画廊
 
@@ -181,6 +196,19 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ---
 
+### 🛡️ 安全边界与防盗链
+
+Worker 与 Pages Functions 接口内置了完善的访问控制与防盗链安全机制：
+
+* **Referer 防盗链机制**：
+  * **允许空 Referer**：默认允许无 Referer 或空 Referer 请求，以良好支持本地 Markdown 文档、笔记引用、终端命令行（如 `curl`）以及浏览器地址栏直接访问等外部场景。
+  * **网页嵌入域名白名单**：当请求携带 Referer（例如第三方网页嵌入引用图片）时，仅放行 `*.srprolin.top` 与 `*.srprolin.com` 域名（以及本地调试的 `localhost` / `127.0.0.1`）。非白名单来源将被拦截并返回 `403 Forbidden`。
+* **CORS 跨域策略**：
+  * 仅向授权白名单站点（`*.srprolin.top`、`*.srprolin.com` 及 `localhost`）开放跨域异步请求（fetch / XHR）。
+  * 匹配白名单时动态响应 `Access-Control-Allow-Origin` 与 `Vary: Origin`，并支持 OPTIONS 预检请求；未授权来源不返回 CORS 跨域许可头部。
+
+---
+
 ### ⚙️ 技术参数细节
 
 #### 关于 `gen_img.py`
@@ -215,7 +243,7 @@ S_{total} = \sum_{c=1}^{n} (16^L \times \bar{S}_c)
 $$
 
 * $S_{total}$：构建后的总磁盘占用。
-* $L$：命令行指定的 `hash-length`（默认 3）。
+* $L$：命令行指定的 `hash-length`（默认 2）。
 * $\bar{S}_c$：分类 $c$ 中**所有合规图片 ($\le 5\text{MB}$)** 的平均体积。
 * $n$：分类文件夹的总数。
 
@@ -230,13 +258,13 @@ $$
 
 ---
 
-### 🎨 关于画廊映射表
+### 🎨 关于分类拓展
 
-画廊组件内部使用 `typeToFolder` 映射表进行解耦。若需增加新分类，仅需：
+前端画廊、首页和配置面板均由构建生成的 `counts.json` 动态驱动。若需增加新分类，仅需：
 
-1. 在 `oriImg/` 新建对应文件夹。
-2. 在 `app/page.tsx` 增加对应的切换按钮。
-   前端会自动匹配 `counts.json` 中的后缀与数量配置，无需修改底层图片加载逻辑。
+1. 在 `oriImg/` 新建对应分类文件夹并放入图片素材。
+2. 执行构建（`npm run build:all`）或提交代码触发自动部署。
+3. 构建脚本会自动嗅探真实尺寸、后缀并同步生成元数据，前端全站自动展现新分类，**无需修改任何前端代码**。
 
 ---
 
