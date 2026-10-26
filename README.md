@@ -1,4 +1,4 @@
-# SrP-IMG — Random Image API & Gallery
+<h1 align="center">SrP-IMG — Random Image API & Gallery</h1>
 
 <p align="center">
   <b>English</b> • <a href="./README_zh.md">简体中文</a>
@@ -260,11 +260,11 @@ A supplied invalid or unauthorized `Origin` receives **403**, including prefligh
 
 Only GET, HEAD, and OPTIONS are supported on protected routes. OPTIONS validates Origin, requested method, and header names, returns 204 when accepted, and deliberately does not require Referer (browsers may omit it). Unsupported methods return 405. HEAD returns the same status/headers with no body, including errors. Redirects, protected assets, and errors carry `Vary: Origin, Referer` and `Cache-Control: private, no-store`; preflights additionally vary on requested method/header names. Existing asset Vary values are preserved. These headers avoid sharing an allow/deny response across callers; overriding them with a cache-everything rule can invalidate the boundary.
 
-**Deployment boundaries:**
+**Deployment boundaries**:
 
-* **Workers:** `/pic` and `/api/pic` are protected. With `protectAssetImages: true`, `/<generated-category>/<filename>.jpg|jpeg|png|gif|webp` is also checked, including redirect destinations and decoded paths. Keep `assets.run_worker_first: true` in `wrangler.jsonc`: Cloudflare's default asset-first routing otherwise serves existing files without invoking the Worker. HTML pages, `counts.json`, JavaScript/CSS, icons, and unrelated assets remain public. All requests now invoke the Worker, which affects request billing/limits; accepted images still use the ASSETS binding internally.
-* **Pages:** `functions/pic.js` protects `/pic` only. A separate Pages function/rewrite is needed for `/api/pic`; this repository does not generate that alias. Static image files and Transform Rule rewrites can bypass the redirect function. Use Pages middleware or account-level WAF/hotlink rules if those must be protected. The `protectAssetImages` switch alone cannot protect Pages static files.
-* **Header checks are not authentication:** clients can omit or forge headers; allowing missing Referer permits such requests by design. Even with missing Referer denied, a nonbrowser client can forge an allowed value. Use authentication/signed URLs or account-level controls for confidential assets or stronger abuse protection.
+* **Workers**: `/pic` and `/api/pic` are protected. With `protectAssetImages: true`, `/<generated-category>/<filename>.jpg|jpeg|png|gif|webp` is also checked, including redirect destinations and decoded paths. Keep `assets.run_worker_first: true` in `wrangler.jsonc`: Cloudflare's default asset-first routing otherwise serves existing files without invoking the Worker. HTML pages, `counts.json`, JavaScript/CSS, icons, and unrelated assets remain public. All requests now invoke the Worker, which affects request billing/limits; accepted images still use the ASSETS binding internally.
+* **Pages**: `functions/pic.js` protects `/pic` only. A separate Pages function/rewrite is needed for `/api/pic`; this repository does not generate that alias. Static image files and Transform Rule rewrites can bypass the redirect function. Use Pages middleware or account-level WAF/hotlink rules if those must be protected. The `protectAssetImages` switch alone cannot protect Pages static files.
+* **Header checks are not authentication**: clients can omit or forge headers; allowing missing Referer permits such requests by design. Even with missing Referer denied, a nonbrowser client can forge an allowed value. Use authentication/signed URLs or account-level controls for confidential assets or stronger abuse protection.
 
 Run the backend contract checks without installing dependencies or regenerating repository image pools:
 

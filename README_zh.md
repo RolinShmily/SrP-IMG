@@ -1,4 +1,4 @@
-# SrP-IMG — 随机图片 API & 画廊
+<h1 align="center">SrP-IMG — 随机图片 API & 画廊</h1>
 
 <p align="center">
   <a href="./README.md">English</a> • <b>简体中文</b>
@@ -260,11 +260,11 @@ python gen_img.py --access-policy ./access-policy.json --hash-length 2
 
 受保护路由只支持 GET、HEAD、OPTIONS。OPTIONS 检查 Origin、请求方法与请求头名称，允许后返回 204；由于浏览器预检可能省略 Referer，预检不要求 Referer。其他方法返回 405。HEAD 在成功和错误时均只返回对应状态/头部，不含正文。跳转、受保护图片和错误响应均带 `Vary: Origin, Referer` 与 `Cache-Control: private, no-store`；预检还对请求方法和请求头名称分流，并保留图片已有的 Vary 值，避免不同调用者共用允许/拒绝响应。覆盖这些头部的“缓存所有内容”规则会破坏此边界。
 
-**部署边界：**
+**部署边界**：
 
-* **Workers：**保护 `/pic` 与 `/api/pic`；`protectAssetImages: true` 时也保护 `/<生成分类>/<文件名>.jpg|jpeg|png|gif|webp`，包括跳转目标和解码后的路径。必须保留 `wrangler.jsonc` 的 `assets.run_worker_first: true`，否则 Cloudflare 默认先返回已匹配静态文件，完全绕过 Worker。HTML 页面、`counts.json`、JS/CSS、图标及非分类资源保持公开。所有请求会执行 Worker，影响请求计费/额度；通过检查后仍经 ASSETS binding 获取图片。
-* **Pages：**`functions/pic.js` 只保护 `/pic`；`/api/pic` 需另加 Pages function/重写，本仓库未生成这个别名。静态图片及 Transform Rules 重写可以绕过跳转函数；如需保护，使用 Pages 中间件或账户级 WAF/防盗链规则。仅启用 `protectAssetImages` 不能保护 Pages 静态文件。
-* **请求头检查不等于身份认证：**客户端可以省略或伪造请求头，允许空 Referer 就会按设计放行这类请求；即便禁止空 Referer，非浏览器客户端仍可伪造白名单值。敏感图片或更强防滥用需求应采用鉴权、签名 URL 或账户级策略。
+* **Workers**：保护 `/pic` 与 `/api/pic`；`protectAssetImages: true` 时也保护 `/<生成分类>/<文件名>.jpg|jpeg|png|gif|webp`，包括跳转目标和解码后的路径。必须保留 `wrangler.jsonc` 的 `assets.run_worker_first: true`，否则 Cloudflare 默认先返回已匹配静态文件，完全绕过 Worker。HTML 页面、`counts.json`、JS/CSS、图标及非分类资源保持公开。所有请求会执行 Worker，影响请求计费/额度；通过检查后仍经 ASSETS binding 获取图片。
+* **Pages**：`functions/pic.js` 只保护 `/pic`；`/api/pic` 需另加 Pages function/重写，本仓库未生成这个别名。静态图片及 Transform Rules 重写可以绕过跳转函数；如需保护，使用 Pages 中间件或账户级 WAF/防盗链规则。仅启用 `protectAssetImages` 不能保护 Pages 静态文件。
+* **请求头检查不等于身份认证**：客户端可以省略或伪造请求头，允许空 Referer 就会按设计放行这类请求；即便禁止空 Referer，非浏览器客户端仍可伪造白名单值。敏感图片或更强防滥用需求应采用鉴权、签名 URL 或账户级策略。
 
 无需安装依赖或覆盖仓库图片池，即可运行后端契约测试：
 
