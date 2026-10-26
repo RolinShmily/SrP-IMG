@@ -6,6 +6,8 @@
 // External contract (see README):
 //   ?img=h        -> 302 to a random horizontal image
 //   ?img=v        -> 302 to a random vertical image
+//   ?img=a        -> 302 to a random avatar image
+//   ?img=gif      -> 302 to a random gif image
 //   ?img=ua       -> 302, orientation chosen from the User-Agent
 //   anything else -> 200 plus a plain-text usage notice
 //
@@ -18,8 +20,10 @@ const HASH_LENGTH = 2;
 const IMAGE_EXT = '.jpg';
 
 const TARGETS = {
-    h: { dir: 'h', slots: 256, label: 'horizontal' },
-    v: { dir: 'v', slots: 256, label: 'vertical' },
+    'a': { dir: 'a', slots: 256, ext: '.jpeg', label: 'avatar' },
+    'gif': { dir: 'gif', slots: 256, ext: '.gif', label: 'gif' },
+    'h': { dir: 'h', slots: 256, ext: '.jpg', label: 'horizontal' },
+    'v': { dir: 'v', slots: 256, ext: '.jpg', label: 'vertical' },
 };
 
 const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
@@ -30,16 +34,18 @@ const USAGE_TEXT = [
     '🖼️ 随机图片展示器',
     '',
     '使用方法:',
+    '• ?img=a - 获取头像随机图片',
+    '• ?img=gif - 获取GIF 随机动图',
     '• ?img=h - 获取横屏随机图片',
     '• ?img=v - 获取竖屏随机图片',
-    '• ?img=ua - 根据设备类型自动选择图片',
+    '• ?img=ua - 根据设备类型自动选择横屏/竖屏图片',
     '',
 ].join('\n');
 
 function randomImagePath(target) {
     const slot = Math.floor(Math.random() * target.slots);
     const hex = slot.toString(16).padStart(HASH_LENGTH, '0');
-    return '/' + target.dir + '/' + hex + IMAGE_EXT;
+    return '/' + target.dir + '/' + hex + (target.ext || IMAGE_EXT);
 }
 
 function resolveTarget(request) {
@@ -47,7 +53,7 @@ function resolveTarget(request) {
 
     if (requested === 'ua') {
         const ua = request.headers.get('User-Agent') || '';
-        return MOBILE_UA.test(ua) ? TARGETS.v : TARGETS.h;
+        return (MOBILE_UA.test(ua) ? TARGETS.v : TARGETS.h) || null;
     }
 
     return Object.prototype.hasOwnProperty.call(TARGETS, requested) ? TARGETS[requested] : null;
@@ -72,7 +78,7 @@ function handleRequest(request) {
             status: 302,
             headers: {
                 Location: randomImagePath(target),
-                'Cache-Control': 'no-cache',
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
                 ...CORS_HEADERS,
             },
         });

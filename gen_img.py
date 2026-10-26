@@ -17,7 +17,7 @@ import datetime
 
 
 # Defaults
-DEFAULT_HASH_LENGTH = 3
+DEFAULT_HASH_LENGTH = 2
 DEFAULT_EXT = ".jpg"
 SOURCE_DIR = Path("oriImg")
 OUTPUT_DIR = Path("public")
@@ -98,10 +98,45 @@ def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
     perform the random-image 302 redirects.
     """
     counts = meta.get('counts', {})
-    h_count = counts.get('h', 0)
-    v_count = counts.get('v', 0)
+    category_exts = meta.get('category_exts', {})
     hl = meta.get('hash_length', DEFAULT_HASH_LENGTH)
     ext = meta.get('output_ext', DEFAULT_EXT)
+
+    label_map = {
+        'h': 'horizontal',
+        'v': 'vertical',
+        'a': 'avatar',
+        'gif': 'gif',
+    }
+    desc_map = {
+        'h': '横屏随机图片',
+        'v': '竖屏随机图片',
+        'a': '头像随机图片',
+        'gif': 'GIF 随机动图',
+    }
+
+    target_entries = []
+    for cat in sorted(counts.keys()):
+        slots = counts[cat]
+        cat_ext = category_exts.get(cat, ext)
+        label = label_map.get(cat, cat)
+        target_entries.append(
+            f"    '{cat}': {{ dir: '{cat}', slots: {slots}, ext: '{cat_ext}', label: '{label}' }},"
+        )
+    targets_code = "\n".join(target_entries)
+
+    usage_lines = [
+        "    '🖼️ 随机图片展示器',",
+        "    '',",
+        "    '使用方法:',",
+    ]
+    for cat in sorted(counts.keys()):
+        desc = desc_map.get(cat, f'{cat} 随机图片')
+        usage_lines.append(f"    '• ?img={cat} - 获取{desc}',")
+    if 'h' in counts and 'v' in counts:
+        usage_lines.append("    '• ?img=ua - 根据设备类型自动选择横屏/竖屏图片',")
+    usage_lines.append("    '',")
+    usage_text_code = "\n".join(usage_lines)
 
     core_logic = f"""
 // ---------------------------------------------------------------------------
@@ -110,6 +145,8 @@ def generate_cf_worker(meta: dict, out_name: str = 'pic.js'):
 // External contract (see README):
 //   ?img=h        -> 302 to a random horizontal image
 //   ?img=v        -> 302 to a random vertical image
+//   ?img=a        -> 302 to a random avatar image
+//   ?img=gif      -> 302 to a random gif image
 //   ?img=ua       -> 302, orientation chosen from the User-Agent
 //   anything else -> 200 plus a plain-text usage notice
 //
@@ -122,8 +159,7 @@ const HASH_LENGTH = {hl};
 const IMAGE_EXT = '{ext}';
 
 const TARGETS = {{
-    h: {{ dir: 'h', slots: {h_count}, label: 'horizontal' }},
-    v: {{ dir: 'v', slots: {v_count}, label: 'vertical' }},
+{targets_code}
 }};
 
 const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
@@ -131,19 +167,13 @@ const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini
 const CORS_HEADERS = {{ 'Access-Control-Allow-Origin': '*' }};
 
 const USAGE_TEXT = [
-    '🖼️ 随机图片展示器',
-    '',
-    '使用方法:',
-    '• ?img=h - 获取横屏随机图片',
-    '• ?img=v - 获取竖屏随机图片',
-    '• ?img=ua - 根据设备类型自动选择图片',
-    '',
+{usage_text_code}
 ].join('\\n');
 
 function randomImagePath(target) {{
     const slot = Math.floor(Math.random() * target.slots);
     const hex = slot.toString(16).padStart(HASH_LENGTH, '0');
-    return '/' + target.dir + '/' + hex + IMAGE_EXT;
+    return '/' + target.dir + '/' + hex + (target.ext || IMAGE_EXT);
 }}
 
 function resolveTarget(request) {{
@@ -151,7 +181,7 @@ function resolveTarget(request) {{
 
     if (requested === 'ua') {{
         const ua = request.headers.get('User-Agent') || '';
-        return MOBILE_UA.test(ua) ? TARGETS.v : TARGETS.h;
+        return (MOBILE_UA.test(ua) ? TARGETS.v : TARGETS.h) || null;
     }}
 
     return Object.prototype.hasOwnProperty.call(TARGETS, requested) ? TARGETS[requested] : null;
@@ -176,7 +206,7 @@ function handleRequest(request) {{
             status: 302,
             headers: {{
                 Location: randomImagePath(target),
-                'Cache-Control': 'no-cache',
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
                 ...CORS_HEADERS,
             }},
         }});

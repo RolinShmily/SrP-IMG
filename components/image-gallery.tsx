@@ -75,10 +75,13 @@ export function ImageGallery({ type }: ImageGalleryProps) {
     // 根据类型设置不同的宽高比
     const getImageDimensions = () => {
       switch (type) {
+        case "h":
         case "horizontal": // 横屏 4:3
           return { width: 800, height: 600, aspectRatio: "4/3" };
+        case "v":
         case "vertical": // 竖屏 9:16
           return { width: 450, height: 800, aspectRatio: "9/16" };
+        case "a":
         case "avatar": // 头像 1:1
           return { width: 800, height: 800, aspectRatio: "1/1" };
         case "gif":

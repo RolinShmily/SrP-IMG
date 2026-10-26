@@ -13,7 +13,7 @@
     "masonry",
     "serverless"
   ],
-  "homepage": "https://img.srprolin.top",
+  "homepage": "https://img.srprolin.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RolinShmily/SrP-IMG.git"
@@ -28,7 +28,10 @@
   },
   "scripts": {
     "build": "next build",
+    "build:all": "npm run gen && npm run build",
+    "deploy": "wrangler deploy",
     "dev": "next dev",
+    "gen": "python gen_img.py --hash-length 2",
     "lint": "eslint .",
     "start": "next start",
     "typecheck": "tsc --noEmit"

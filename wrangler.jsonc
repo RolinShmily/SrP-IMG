@@ -3,14 +3,16 @@
   "main": "index.js",
   "compatibility_date": "2026-01-05",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./out",
     "binding": "ASSETS"
   },
   "routes": [
     {
-      "pattern": "img.srprolin.top/*",
-      "zone_name": "srprolin.top"
+      "pattern": "img.srprolin.com/*",
+      "zone_name": "srprolin.com"
     }
   ]
 }

@@ -44,6 +44,7 @@ next-env.d.ts
 !/public/counts.json
 !/public/icon.svg
 !/public/placeholder.svg
+!/public/_headers
 
 # Python
 __pycache__/

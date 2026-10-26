@@ -1,0 +1,19 @@
+# Cloudflare Workers / Pages Static Assets headers
+
+# Immutable cache for generated static images (1 year)
+/h/*
+  Cache-Control: public, max-age=31536000, immutable
+/v/*
+  Cache-Control: public, max-age=31536000, immutable
+/a/*
+  Cache-Control: public, max-age=31536000, immutable
+/gif/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Metadata index should revalidate
+/counts.json
+  Cache-Control: public, max-age=0, must-revalidate
+
+# General security header
+/*
+  X-Content-Type-Options: nosniff

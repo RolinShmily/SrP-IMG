@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Build and deploy to img.srprolin.top
+    name: Build and deploy to img.srprolin.com
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -53,7 +53,7 @@ jobs:
       - name: Build static export
         run: npm run build
 
-      # Route is declared in wrangler.jsonc: img.srprolin.top/* (zone srprolin.top).
+      # Route is declared in wrangler.jsonc: img.srprolin.com/* (zone srprolin.com).
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy
         env:
