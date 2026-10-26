@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **Configurable access & hotlink protection** — `access-policy.json` defines Referer allowlists, missing Referer policy, CORS origins, and direct image asset protection. Both Worker and Pages entries embed the policy with explicit rule comments at build time (`python gen_img.py --access-policy`).
 * **Visual access policy editor** — Interactive policy panel on the `/settings` page with live validation, hostname/origin normalization, JSON preview, clipboard copy, and file download.
+* **Dynamic converging floating capsule header** — Ported from `SrP-BloG`, featuring smooth 8% desktop convergence past 20px of scroll, downwards retract past 350px with instant upward recovery, and an accessible mobile menu drawer.
 * **Modernized SVG brand icon** — Redesigned high-resolution vector icon with a dark forest green squircle base, mint photo frames, depth geometry, and accent glows.
 * **Route enter transitions & loading indicators** — Route transition wrapper (`app/template.tsx`) with non-intrusive opacity reveal, and navbar active/pending feedback via `useLinkStatus`.
 * **Complete i18n coverage** — Full English and Chinese coverage across all pages, dynamic category names, metadata descriptions, document titles, and screen reader announcements.

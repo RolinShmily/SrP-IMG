@@ -19,6 +19,8 @@ export interface Translations {
     switchTheme: string;
     switchLanguage: string;
     skipToContent: string;
+    menu: string;
+    closeMenu: string;
   };
   home: {
     badge: string;
@@ -118,6 +120,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       switchTheme: "切换明暗主题",
       switchLanguage: "切换为英语",
       skipToContent: "跳到主要内容",
+      menu: "打开导航菜单",
+      closeMenu: "关闭导航菜单",
     },
     home: {
       badge: "开源 · 多分类 · 可配置的随机图片服务",
@@ -215,6 +219,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       switchTheme: "Toggle color theme",
       switchLanguage: "Switch to Chinese",
       skipToContent: "Skip to main content",
+      menu: "Open navigation menu",
+      closeMenu: "Close navigation menu",
     },
     home: {
       badge: "Open Source · Multiple Categories · Configurable Access",
