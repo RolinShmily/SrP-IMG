@@ -27,7 +27,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "next build",
+    "build": "next build && node scripts/normalize-static-export.mjs",
     "build:all": "npm run gen && npm run build",
     "deploy": "wrangler deploy",
     "dev": "next dev",

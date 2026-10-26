@@ -1,15 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useState, useSyncExternalStore } from "react";
+import React, { createContext, useContext, useEffect, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 
 export type Language = "zh" | "en";
 
 export interface Translations {
+  meta: {
+    title: string;
+    description: string;
+  };
   nav: {
     home: string;
     gallery: string;
     settings: string;
     github: string;
+    primary: string;
+    switchTheme: string;
+    switchLanguage: string;
+    skipToContent: string;
   };
   home: {
     badge: string;
@@ -21,6 +30,16 @@ export interface Translations {
     liveDemoSubtitle: string;
     refreshBtn: string;
     copyDirectBtn: string;
+    copied: string;
+    copyFailed: string;
+    browseGallery: string;
+    animatedFormat: string;
+    adaptive: string;
+    previewAlt: string;
+    previewLoading: string;
+    previewError: string;
+    retry: string;
+    previewNote: string;
     categoriesTitle: string;
     categoriesSubtitle: string;
     featuresTitle: string;
@@ -86,32 +105,50 @@ export interface Translations {
 
 export const TRANSLATIONS: Record<Language, Translations> = {
   zh: {
+    meta: {
+      title: "SrP-IMG — 随机图片 API 与画廊",
+      description: "基于 Cloudflare Workers 与 Next.js 的多分类随机图片服务，支持可配置访问策略与自适应画廊。",
+    },
     nav: {
       home: "首页",
       gallery: "画廊",
       settings: "配置 & API",
       github: "开源仓库",
+      primary: "主导航",
+      switchTheme: "切换明暗主题",
+      switchLanguage: "切换为英语",
+      skipToContent: "跳到主要内容",
     },
     home: {
-      badge: "开源·零成本·全功能随机图片解决方案",
+      badge: "开源 · 多分类 · 可配置的随机图片服务",
       heroTitle: "SrP-IMG 全能随机图库",
-      heroSubtitle: "基于 Cloudflare Workers 与 Next.js 打造的无限流量、智能多分类随机图片 API 与现代化瀑布流画廊。",
+      heroSubtitle: "基于 Cloudflare Workers 与 Next.js 构建的多分类随机图片 API，配备访问策略配置与自适应画廊。",
       exploreBtn: "进入画廊",
       settingsBtn: "API 与配置",
       liveDemoTitle: "在线实时体验",
-      liveDemoSubtitle: "点击下方按钮体验毫秒级随机分发与设备自适应",
+      liveDemoSubtitle: "随机浏览各类原图，体验设备自适应分发",
       refreshBtn: "换一张",
       copyDirectBtn: "复制直链",
+      copied: "已复制",
+      copyFailed: "复制失败，请允许剪贴板访问后重试。",
+      browseGallery: "浏览画廊",
+      animatedFormat: "动态格式",
+      adaptive: "自适应",
+      previewAlt: "随机图片预览",
+      previewLoading: "正在加载图片…",
+      previewError: "图片加载失败，请重试。",
+      retry: "重新加载",
+      previewNote: "完整显示原图，保留原始比例",
       categoriesTitle: "图库全景与素材分类",
       categoriesSubtitle: "所有分类均由 Python 离线扩散自动导出，无需手动干预",
       featuresTitle: "核心技术架构优势",
       featuresSubtitle: "专为边缘 Serverless 调优的高性能设计",
-      featFreeTitle: "真正零成本·无限流量",
-      featFreeDesc: "静态素材托管于 Cloudflare 边缘缓存，结合 Transform Rules 0 消耗 Worker 请求额度。",
+      featFreeTitle: "静态托管与边缘分发",
+      featFreeDesc: "图片可由 Cloudflare 静态资产分发。启用 Worker 直链保护会执行 Worker，额度取决于部署方式与套餐。",
       featEdgeTitle: "无感边缘重写",
       featEdgeDesc: "URL 保持极简优雅（如 /h, /a），浏览器地址栏无痕不变，直接输出高清图片流。",
-      featSecurityTitle: "Referer 防盗链保护",
-      featSecurityDesc: "白名单保护防蹭流量，放行空 Referer 确保 Markdown 与本地终端丝滑调用。",
+      featSecurityTitle: "可配置的访问保护",
+      featSecurityDesc: "独立配置 Referer 白名单、空 Referer 策略与 CORS Origin，生成代码时写入 Worker，重新部署后生效。",
       featUaTitle: "UA 智能设备分流",
       featUaDesc: "单接口智能探测访问设备：移动端返回高清竖屏壁纸，PC 端返回横屏风景插画。",
     },
@@ -165,32 +202,50 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     },
   },
   en: {
+    meta: {
+      title: "SrP-IMG — Random Image API & Gallery",
+      description: "A multi-category random image service with configurable access policies and an adaptive gallery, built on Cloudflare Workers and Next.js.",
+    },
     nav: {
       home: "Home",
       gallery: "Gallery",
       settings: "Config & API",
-      github: "GitHub",
+      github: "GitHub Repository",
+      primary: "Main navigation",
+      switchTheme: "Toggle color theme",
+      switchLanguage: "Switch to Chinese",
+      skipToContent: "Skip to main content",
     },
     home: {
-      badge: "Open Source · Zero Cost · Unlimited Random Image Solution",
+      badge: "Open Source · Multiple Categories · Configurable Access",
       heroTitle: "SrP-IMG Random Image API",
-      heroSubtitle: "An unlimited-traffic, smart multi-category random image solution and modern gallery built on Cloudflare Workers & Next.js.",
+      heroSubtitle: "A multi-category random image API with configurable access policies and an adaptive gallery, built on Cloudflare Workers & Next.js.",
       exploreBtn: "Explore Gallery",
       settingsBtn: "API & Config",
       liveDemoTitle: "Live Interactive Preview",
-      liveDemoSubtitle: "Experience sub-millisecond random dispatch and device-adaptive image delivery",
+      liveDemoSubtitle: "Browse random original images and try device-adaptive delivery",
       refreshBtn: "Randomize",
       copyDirectBtn: "Copy Link",
+      copied: "Copied",
+      copyFailed: "Copy failed. Allow clipboard access and try again.",
+      browseGallery: "Browse gallery",
+      animatedFormat: "Animated",
+      adaptive: "Adaptive",
+      previewAlt: "Random image preview",
+      previewLoading: "Loading image…",
+      previewError: "The image could not load. Please try again.",
+      retry: "Try again",
+      previewNote: "Full image, original proportions",
       categoriesTitle: "Library Overview & Categories",
       categoriesSubtitle: "All categories are auto-diffused by Python offline build without manual code changes",
       featuresTitle: "Core Architectural Advantages",
       featuresSubtitle: "High-performance serverless design tuned for edge networks",
-      featFreeTitle: "Truly Zero Cost · Unlimited",
-      featFreeDesc: "Static assets served directly from Cloudflare edge cache with Transform Rules consuming 0 Worker quota.",
+      featFreeTitle: "Static Hosting & Edge Delivery",
+      featFreeDesc: "Deliver images through Cloudflare static assets. Worker-based direct-link protection executes a Worker and is subject to your deployment and plan limits.",
       featEdgeTitle: "Seamless Edge Rewrite",
       featEdgeDesc: "Clean and concise URLs (e.g. /h, /a) where browser address bar stays unchanged while streaming image data.",
-      featSecurityTitle: "Referer Hotlink Protection",
-      featSecurityDesc: "Whitelisted referrer policy prevents hotlinking while empty referrers stay open for Markdown & curl.",
+      featSecurityTitle: "Configurable Access Protection",
+      featSecurityDesc: "Configure Referer hosts, missing-referrer behavior, and CORS origins. The policy is embedded in generated Workers and takes effect after deployment.",
       featUaTitle: "Device-Aware Smart Routing",
       featUaDesc: "Intelligently delivers vertical wallpapers to mobile devices and horizontal scenery to desktops.",
     },
@@ -268,10 +323,11 @@ function getSnapshot(): Language {
   try {
     const stored = localStorage.getItem("srp_lang") as Language | null;
     if (stored === "zh" || stored === "en") return stored;
-    if (navigator.language?.toLowerCase().startsWith("en")) return "en";
   } catch {
-    // ignore
+    // Storage may be disabled; the in-memory preference still works.
   }
+  if (sessionLanguage) return sessionLanguage;
+  if (navigator.language?.toLowerCase().startsWith("en")) return "en";
   return "zh";
 }
 
@@ -279,19 +335,29 @@ function getServerSnapshot(): Language {
   return "zh";
 }
 
+let sessionLanguage: Language | null = null;
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const storedLang = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const [overrideLang, setOverrideLang] = useState<Language | null>(null);
-  const lang = overrideLang ?? storedLang;
+  const lang = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const messages = TRANSLATIONS[lang];
+    const pageName = pathname.startsWith("/gallery") ? messages.nav.gallery
+      : pathname.startsWith("/settings") ? messages.nav.settings : "";
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.title = pageName ? `${pageName} · ${messages.meta.title}` : messages.meta.title;
+    document.querySelector('meta[name="description"]')?.setAttribute("content", messages.meta.description);
+  }, [lang, pathname]);
 
   const setLang = (newLang: Language) => {
-    setOverrideLang(newLang);
+    sessionLanguage = newLang;
     try {
       localStorage.setItem("srp_lang", newLang);
-      window.dispatchEvent(new Event("storage"));
     } catch {
-      // ignore
+      // Keep this tab's preference when storage is unavailable.
     }
+    window.dispatchEvent(new Event("storage"));
   };
 
   const value: I18nContextType = {

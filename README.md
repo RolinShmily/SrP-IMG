@@ -42,11 +42,25 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 │   ├── page.tsx            # Home showcase & live interactive demo
 │   ├── gallery/            # Dedicated waterfall gallery page
 │   ├── settings/           # API guide & edge configuration center
+│   ├── template.tsx        # Client route enter transition wrapper
 │   └── layout.tsx          # Root layout & global metadata
 ├── components/             # React UI components
+│   ├── access-policy-panel.tsx # Hotlink & access policy visual editor
+│   ├── live-preview.tsx    # Live image preview container (zero-crop)
 │   ├── image-gallery.tsx   # Core waterfall gallery component
 │   └── api-panel.tsx       # Interactive API copy & rule generator panel
+├── lib/                    # Shared libraries & typed translations
+│   ├── i18n.tsx            # Internationalization context & core strings
+│   ├── api-translations.ts # API guide bilingual translations
+│   └── gallery-translations.ts # Gallery bilingual translations
+├── scripts/                # Build & normalization utilities
+│   └── normalize-static-export.mjs # Static export segment path normalizer
+├── tests/                  # Automated test suite
+│   ├── backend-contract.test.mjs   # Worker / Pages security & HTTP contract tests
+│   ├── static-export.test.mjs      # Next.js static export regression tests
+│   └── test_access_policy.py       # Access policy generator & validation tests
 ├── gen_img.py              # Build script: asset scanning, hash mapping & metadata generation
+├── access-policy.json      # Build-time Referer/CORS and image access policy
 ├── index.js                # Cloudflare Workers entrypoint
 ├── wrangler.jsonc          # Cloudflare Workers configuration
 ├── README.md               # English documentation
@@ -82,6 +96,8 @@ The project includes convenient npm scripts for the workflow:
 | `npm run dev` | Start local Next.js development server |
 | `npm run build` | Build Next.js static export (`out/`) |
 
+`npm run build` also normalizes Next.js 16 segment filenames on Windows so static route prefetch requests resolve correctly; Linux exports are unchanged.
+
 #### 3. Local Testing
 
 To preview the gallery locally:
@@ -91,6 +107,8 @@ To preview the gallery locally:
 python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
+
+To test the random endpoint and access policy in the Cloudflare runtime, run `npm run build`, then `npx wrangler dev --local`, and open the URL Wrangler prints. On Windows, stop this local Wrangler process before rebuilding because it holds the `out/` directory open. The Next.js development server alone does not execute the Worker.
 
 #### 4. Cloudflare Pages / Workers Production Build
 
@@ -111,7 +129,8 @@ If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./out",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
 ```
@@ -125,7 +144,7 @@ Deploy command: `npm run deploy` (or `npx wrangler deploy`)
 
 #### Method A: Serverless API (JS Redirection)
 
-Powered by `functions/pic.js` (Pages) or `index.js` (Workers). Supports both `/pic` and `/api/pic` endpoints. Ideal for Markdown files and external websites:
+Powered by `functions/pic.js` (Pages: `/pic`) or `index.js` (Workers: `/pic` and `/api/pic`). Configure the access policy below before embedding in external websites:
 
 | Endpoint | Target / Behavior | Description |
 | :--- | :--- | :--- |
@@ -198,14 +217,61 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ### 🛡️ Security Boundaries & Anti-Hotlinking
 
-The Worker and Pages Functions endpoints include built-in security and access control guardrails:
+The Config & API page includes a bilingual policy editor with validation, JSON preview, and configuration download. It edits a browser draft; it does not change the deployed service.
 
-* **Referer Hotlink Protection**:
-  * **Open for Direct & Markdown Access**: Empty or missing `Referer` headers are allowed by default to support local Markdown document previews, note-taking apps, terminal commands (e.g., `curl`), and direct browser address bar visits.
-  * **Domain Whitelist for Web Embedding**: When a `Referer` header is present (such as an `<img>` tag embedded in an external webpage), requests are restricted to `*.srprolin.top` and `*.srprolin.com` domains (along with `localhost` / `127.0.0.1` for local development). Unauthorized referrers are blocked with `403 Forbidden`.
-* **CORS Policy**:
-  * Cross-origin asynchronous requests (fetch / XHR) are only permitted from whitelisted sites (`*.srprolin.top`, `*.srprolin.com`, and `localhost`).
-  * Authorized origins receive dynamic `Access-Control-Allow-Origin` and `Vary: Origin` response headers along with preflight `OPTIONS` handling. Unauthorized origins do not receive CORS authorization headers.
+[access-policy.json](./access-policy.json) is the single build-time configuration for both generated backends. Edit it, then regenerate before building/deploying; editing the JSON after deployment has no effect. The generated `index.js` and `functions/pic.js` explicitly include the policy and matching rules in comments.
+
+```bash
+python gen_img.py --access-policy ./access-policy.json --hash-length 2
+```
+
+`--access-policy` is optional: the default is `./access-policy.json` in the working directory. If that implicit file is absent, the same portable defaults apply. An explicitly selected missing/invalid file, unknown/missing fields, invalid host patterns, or invalid origins fail the build before image output changes. No project domain or localhost exception is hardcoded.
+
+The complete v1 configuration (all fields required) defaults to:
+
+```json
+{
+  "version": 1,
+  "referer": {
+    "enabled": true,
+    "allowMissing": true,
+    "allowSameOrigin": true,
+    "allowedHosts": []
+  },
+  "cors": {
+    "allowSameOrigin": true,
+    "allowedOrigins": []
+  },
+  "protectAssetImages": true
+}
+```
+
+| Setting | Behavior |
+| :--- | :--- |
+| `referer.enabled` | Enable Referer checks. Disabling this does not disable Origin checks. |
+| `referer.allowMissing` | Allow absent/empty Referer, useful for direct requests, curl, and Markdown. Set false to require Referer on GET/HEAD. |
+| `referer.allowSameOrigin` | Allow a Referer whose origin matches the actual request URL (scheme, host, and port). |
+| `referer.allowedHosts` | Case-insensitive exact hostnames/IPs or `*.example.com` suffix patterns; no scheme, path, or port. A wildcard matches `a.example.com` and `a.b.example.com`, but excludes `example.com` and `badexample.com`. Add the root hostname separately. Exact hosts do not include subdomains. Use ASCII/punycode for international names. |
+| `cors.allowSameOrigin` | Allow an Origin matching the actual request URL. |
+| `cors.allowedOrigins` | Independent exact origins, e.g. `["https://client.example", "http://localhost:3000"]`. Include scheme and any nondefault port; no path, trailing slash, credentials, `null`, or wildcards. Scheme/port differences require separate entries. |
+| `protectAssetImages` | In Workers, apply both checks to image files in generated category directories. It does not add Pages middleware. |
+
+A supplied invalid or unauthorized `Origin` receives **403**, including preflight and requests that have an allowed/missing Referer. An absent Origin is allowed, then Referer policy is evaluated separately; an invalid or unauthorized Referer also receives **403**. To allow another web application, configure its origin for fetch/XHR and its host for image embedding as needed. CORS membership does not grant Referer membership.
+
+Only GET, HEAD, and OPTIONS are supported on protected routes. OPTIONS validates Origin, requested method, and header names, returns 204 when accepted, and deliberately does not require Referer (browsers may omit it). Unsupported methods return 405. HEAD returns the same status/headers with no body, including errors. Redirects, protected assets, and errors carry `Vary: Origin, Referer` and `Cache-Control: private, no-store`; preflights additionally vary on requested method/header names. Existing asset Vary values are preserved. These headers avoid sharing an allow/deny response across callers; overriding them with a cache-everything rule can invalidate the boundary.
+
+**Deployment boundaries:**
+
+* **Workers:** `/pic` and `/api/pic` are protected. With `protectAssetImages: true`, `/<generated-category>/<filename>.jpg|jpeg|png|gif|webp` is also checked, including redirect destinations and decoded paths. Keep `assets.run_worker_first: true` in `wrangler.jsonc`: Cloudflare's default asset-first routing otherwise serves existing files without invoking the Worker. HTML pages, `counts.json`, JavaScript/CSS, icons, and unrelated assets remain public. All requests now invoke the Worker, which affects request billing/limits; accepted images still use the ASSETS binding internally.
+* **Pages:** `functions/pic.js` protects `/pic` only. A separate Pages function/rewrite is needed for `/api/pic`; this repository does not generate that alias. Static image files and Transform Rule rewrites can bypass the redirect function. Use Pages middleware or account-level WAF/hotlink rules if those must be protected. The `protectAssetImages` switch alone cannot protect Pages static files.
+* **Header checks are not authentication:** clients can omit or forge headers; allowing missing Referer permits such requests by design. Even with missing Referer denied, a nonbrowser client can forge an allowed value. Use authentication/signed URLs or account-level controls for confidential assets or stronger abuse protection.
+
+Run the backend contract checks without installing dependencies or regenerating repository image pools:
+
+```bash
+node --test tests/backend-contract.test.mjs
+python -m unittest discover -s tests -p test_access_policy.py -v
+```
 
 ---
 

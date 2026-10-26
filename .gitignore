@@ -53,6 +53,7 @@ __pycache__/
 
 # Cloudflare
 /.wrangler/
+.playwright-mcp/
 
 # OS / editor junk
 .DS_Store

@@ -3,9 +3,11 @@
 import * as React from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useI18n } from '@/lib/i18n'
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+  const { t } = useI18n()
 
   // False during SSR and hydration, true afterwards — the same gate the
   // previous `mounted` state provided, without a setState inside an effect.
@@ -16,20 +18,22 @@ export function ModeToggle() {
   )
 
   if (!mounted) {
-    return <div className="w-10 h-10" /> // Placeholder to avoid layout shift
+    return <div className="size-9" /> // Placeholder to avoid layout shift
   }
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="inline-flex items-center justify-center rounded-md w-10 h-10 text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+      type="button"
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+      title={t.nav.switchTheme}
+      aria-label={t.nav.switchTheme}
+      className="inline-flex items-center justify-center rounded-lg size-9 text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
     >
-      {theme === 'dark' ? (
-        <Moon className="h-[1.2rem] w-[1.2rem] transition-all" />
+      {resolvedTheme === 'dark' ? (
+        <Moon className="size-[18px]" aria-hidden="true" />
       ) : (
-        <Sun className="h-[1.2rem] w-[1.2rem] transition-all" />
+        <Sun className="size-[18px]" aria-hidden="true" />
       )}
-      <span className="sr-only">Toggle theme</span>
     </button>
   )
 }

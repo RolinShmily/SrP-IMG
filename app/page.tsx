@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { LivePreview } from "@/components/live-preview";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useI18n } from "@/lib/i18n";
 import {
   Sparkles,
   ArrowRight,
-  RefreshCw,
-  Copy,
-  Check,
   ExternalLink,
   Shield,
   Zap,
@@ -59,12 +56,6 @@ export default function HomePage() {
     { key: "gif", labelZh: "动态动图", labelEn: "GIF", count: 10, ext: ".gif", aspect: "动态格式" },
   ]);
 
-  // Live Demo 状态
-  const [demoCat, setDemoCat] = useState<string>("h");
-  const [randomSeed, setRandomSeed] = useState<number>(() => Date.now());
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
-
   useEffect(() => {
     let isMounted = true;
     async function loadMeta() {
@@ -91,9 +82,6 @@ export default function HomePage() {
             aspect: c.aspect_hint || "自适应",
           }));
           setCategories(stats);
-          if (data.categories[0]?.key && !data.categories.some((c: { key: string }) => c.key === "h")) {
-            setDemoCat(data.categories[0].key);
-          }
         } else {
           const countsMap = data.real_counts || data.counts || {};
           const extsMap = data.category_exts || {};
@@ -122,8 +110,8 @@ export default function HomePage() {
             setCategories(stats);
           }
         }
-      } catch {
-        // fallback to defaults
+      } catch (error) {
+        console.warn("Could not load home category metadata:", error);
       }
     }
     loadMeta();
@@ -132,29 +120,11 @@ export default function HomePage() {
     };
   }, []);
 
-  const handleRandomize = () => {
-    setIsImageLoading(true);
-    setRandomSeed(Date.now());
-  };
-
-  const currentDemoUrl = `/pic?img=${demoCat}&_t=${randomSeed}`;
-
-  const handleCopyLink = async () => {
-    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : "https://img.srprolin.com"}/pic?img=${demoCat}`;
-    try {
-      await navigator.clipboard.writeText(fullUrl);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      // ignore
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         {/* 1. Hero Section */}
         <section className="relative overflow-hidden pt-12 pb-16 sm:pt-20 sm:pb-24 border-b border-border/50 bg-gradient-to-b from-muted/30 via-background to-background">
           <div className="container mx-auto px-4 max-w-5xl text-center space-y-6">
@@ -165,7 +135,7 @@ export default function HomePage() {
             </div>
 
             {/* 标题 */}
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-balance bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70">
+            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-balance text-foreground">
               {t.home.heroTitle}
             </h1>
 
@@ -178,7 +148,7 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Link
                 href="/gallery"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm shadow-sm hover:shadow-md hover:bg-primary/85 transition-[background-color,box-shadow] duration-150"
               >
                 <ImageIcon className="w-4 h-4" />
                 <span>{t.home.exploreBtn}</span>
@@ -207,86 +177,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* 交互体验盒 */}
-            <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
-              {/* 分类切换 Pills */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 bg-muted/80 p-1 rounded-xl">
-                  {categories.map((c) => {
-                    const label = lang === "zh" ? c.labelZh : c.labelEn;
-                    const isActive = demoCat === c.key;
-                    return (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => {
-                          setDemoCat(c.key);
-                          setIsImageLoading(true);
-                          setRandomSeed(Date.now());
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                          isActive
-                            ? "bg-background text-foreground shadow-xs font-semibold"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleRandomize}
-                    disabled={isImageLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium shadow-2xs hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-70"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isImageLoading ? "animate-spin" : ""}`} />
-                    <span>{t.home.refreshBtn}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-medium border border-border/80 transition-colors cursor-pointer"
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">已复制</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{t.home.copyDirectBtn}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* 实时图片预览窗口 */}
-              <div className="relative w-full h-72 sm:h-96 rounded-xl bg-muted/60 overflow-hidden flex items-center justify-center border border-border/60">
-                <Image
-                  key={`${demoCat}-${randomSeed}`}
-                  src={currentDemoUrl}
-                  alt={`Live random demo (${demoCat})`}
-                  fill
-                  className={`object-cover transition-all duration-300 ${isImageLoading ? "opacity-60 scale-[1.01] blur-xs" : "opacity-100 scale-100 blur-0"}`}
-                  onLoad={() => setIsImageLoading(false)}
-                  onError={() => setIsImageLoading(false)}
-                  unoptimized
-                />
-
-                {/* 悬浮路由指示 */}
-                <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-mono text-foreground border border-border/60 shadow-xs flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>GET /pic?img={demoCat}</span>
-                </div>
-              </div>
-            </div>
+            <LivePreview categories={categories} />
           </div>
         </section>
 
@@ -328,7 +219,7 @@ export default function HomePage() {
                           /{c.key}
                         </span>
                         <span className="text-xs font-mono text-muted-foreground">
-                          {c.aspect}
+                          {/[\u3400-\u9fff]/.test(c.aspect) ? (c.key === "gif" ? t.home.animatedFormat : t.home.adaptive) : c.aspect}
                         </span>
                       </div>
                       <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
@@ -340,7 +231,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-muted-foreground group-hover:text-foreground pt-2 border-t border-border/40 font-medium">
-                      <span>浏览画廊</span>
+                      <span>{t.home.browseGallery}</span>
                       <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </Link>

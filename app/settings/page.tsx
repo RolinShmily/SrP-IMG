@@ -3,6 +3,7 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ApiPanel } from "@/components/api-panel";
+import { AccessPolicyPanel } from "@/components/access-policy-panel";
 import { useI18n } from "@/lib/i18n";
 import { SlidersHorizontal, Shield, Sparkles } from "lucide-react";
 
@@ -13,7 +14,7 @@ export default function SettingsPage() {
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-8 sm:py-10 max-w-6xl flex-1">
+      <main id="main-content" className="container mx-auto px-4 py-8 sm:py-10 max-w-6xl flex-1">
         {/* 页面标题 Header */}
         <div className="mb-8 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
@@ -27,6 +28,8 @@ export default function SettingsPage() {
             {t.settings.subtitle}
           </p>
         </div>
+
+        <AccessPolicyPanel />
 
         {/* 核心配置面板（默认展开） */}
         <ApiPanel defaultOpen={true} />

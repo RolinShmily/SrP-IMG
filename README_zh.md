@@ -42,11 +42,25 @@
 │   ├── page.tsx            # 首页全景与实时体验
 │   ├── gallery/            # 独立瀑布流画廊页面
 │   ├── settings/           # API 调用与配置中心
+│   ├── template.tsx        # 客户端路由切换进入过渡容器
 │   └── layout.tsx          # 根布局与元数据配置
 ├── components/             # React UI 组件
+│   ├── access-policy-panel.tsx # 防盗链与访问策略图形化配置面板
+│   ├── live-preview.tsx    # 实时原图自适应预览容器（零裁切）
 │   ├── image-gallery.tsx   # 核心瀑布流画廊组件
 │   └── api-panel.tsx       # API 快捷调用与规则参考面板
+├── lib/                    # 共享模块与类型化国际化字典
+│   ├── i18n.tsx            # 国际化上下文与全局文案
+│   ├── api-translations.ts # API 指南双语翻译字典
+│   └── gallery-translations.ts # 画廊双语翻译字典
+├── scripts/                # 构建辅助脚本
+│   └── normalize-static-export.mjs # Next 16 静态导出片段路径规范化工具
+├── tests/                  # 自动化回归测试套件
+│   ├── backend-contract.test.mjs   # Worker / Pages 安全与 HTTP 契约测试
+│   ├── static-export.test.mjs      # 静态导出片段路径回归测试
+│   └── test_access_policy.py       # 访问策略生成与校验单元测试
 ├── gen_img.py              # 构建脚本：素材扫描、哈希映射与元数据生成
+├── access-policy.json      # 构建期 Referer/CORS 与图片访问策略
 ├── index.js                # Cloudflare Workers 入口
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
 ├── README.md               # 英文说明文档
@@ -82,6 +96,8 @@
 | `npm run dev` | 启动本地 Next.js 开发调试服务 |
 | `npm run build` | 执行 Next.js 静态编译与导出 (`out/`) |
 
+`npm run build` 还会修正 Next.js 16 在 Windows 上导出的路由片段文件名，保证静态部署的路由预取请求正常；Linux 导出保持原样。
+
 #### 3. 本地测试
 
 如果您想在本地预览画廊效果，请执行：
@@ -91,6 +107,8 @@
 python gen_img.py --no-copy --hash-length 2
 npm run dev
 ```
+
+要在 Cloudflare 运行时验证随机接口与访问策略，请先执行 `npm run build`，再运行 `npx wrangler dev --local`，打开 Wrangler 显示的地址。Windows 下重新构建前需停止该本地 Wrangler 进程，因为它会占用 `out/` 目录。仅运行 Next.js 开发服务不会执行 Worker。
 
 #### 4. Cloudflare Pages / Workers 生产构建
 
@@ -111,7 +129,8 @@ npm run dev
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./out",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
 ```
@@ -125,7 +144,7 @@ npm run dev
 
 #### 方式 A：服务端 API (JS 重定向)
 
-由生成的 `functions/pic.js` (Pages) 或 `index.js` (Workers) 提供支持，同时支持 `/pic` 与 `/api/pic` 路径，适合在 Markdown 或外部网页中直接引用：
+由生成的 `functions/pic.js`（Pages：`/pic`）或 `index.js`（Workers：`/pic` 与 `/api/pic`）提供支持；外部网页引用前请配置下文的访问策略：
 
 | 功能描述 | 调用地址 | 返回结果 |
 | :--- | :--- | :--- |
@@ -198,14 +217,61 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ### 🛡️ 安全边界与防盗链
 
-Worker 与 Pages Functions 接口内置了完善的访问控制与防盗链安全机制：
+“配置 & API”页面提供中英文策略编辑器、字段校验、JSON 预览与配置下载。表单编辑的是浏览器草稿，不会直接修改已部署服务。
 
-* **Referer 防盗链机制**：
-  * **允许空 Referer**：默认允许无 Referer 或空 Referer 请求，以良好支持本地 Markdown 文档、笔记引用、终端命令行（如 `curl`）以及浏览器地址栏直接访问等外部场景。
-  * **网页嵌入域名白名单**：当请求携带 Referer（例如第三方网页嵌入引用图片）时，仅放行 `*.srprolin.top` 与 `*.srprolin.com` 域名（以及本地调试的 `localhost` / `127.0.0.1`）。非白名单来源将被拦截并返回 `403 Forbidden`。
-* **CORS 跨域策略**：
-  * 仅向授权白名单站点（`*.srprolin.top`、`*.srprolin.com` 及 `localhost`）开放跨域异步请求（fetch / XHR）。
-  * 匹配白名单时动态响应 `Access-Control-Allow-Origin` 与 `Vary: Origin`，并支持 OPTIONS 预检请求；未授权来源不返回 CORS 跨域许可头部。
+[access-policy.json](./access-policy.json) 是两个后端的统一构建配置。修改后需要重新生成、构建并部署；部署后只修改 JSON 不会生效。生成的 `index.js` 和 `functions/pic.js` 会内嵌配置，并明确注释匹配规则。
+
+```bash
+python gen_img.py --access-policy ./access-policy.json --hash-length 2
+```
+
+`--access-policy` 可选：默认读取当前目录的 `./access-policy.json`；若默认文件不存在则使用相同的通用默认值。显式指定文件不存在、JSON 无效、字段缺失/拼错、域名或 origin 格式错误时，会在修改图片产物前终止构建。没有写死任何项目域名或 localhost 例外。
+
+完整 v1 配置如下（所有字段必填，以下为默认值）：
+
+```json
+{
+  "version": 1,
+  "referer": {
+    "enabled": true,
+    "allowMissing": true,
+    "allowSameOrigin": true,
+    "allowedHosts": []
+  },
+  "cors": {
+    "allowSameOrigin": true,
+    "allowedOrigins": []
+  },
+  "protectAssetImages": true
+}
+```
+
+| 字段 | 含义 |
+| :--- | :--- |
+| `referer.enabled` | 是否启用 Referer 校验。关闭后仍检查 Origin。 |
+| `referer.allowMissing` | 是否允许缺失/空 Referer，方便直链、curl 与 Markdown；设为 false 则 GET/HEAD 必须携带 Referer。 |
+| `referer.allowSameOrigin` | 是否允许 Referer 与实际请求 URL 同源（协议、主机、端口一致）。 |
+| `referer.allowedHosts` | 不区分大小写的精确主机/IP 或 `*.example.com`；不包含协议、路径、端口。通配符匹配 `a.example.com`、`a.b.example.com`，不包含根域 `example.com`，也不匹配 `badexample.com`；根域需另加一项。精确主机不包含子域。国际化域名请用 ASCII/punycode。 |
+| `cors.allowSameOrigin` | 是否允许与实际请求 URL 同源的 Origin。 |
+| `cors.allowedOrigins` | 独立的精确 origin，例如 `["https://client.example", "http://localhost:3000"]`。包含协议与非默认端口，不允许路径、尾部斜杠、凭据、`null` 或通配符；协议/端口不同需分别配置。 |
+| `protectAssetImages` | 在 Worker 中对生成分类目录内的图片直链应用两项检查；不会生成 Pages 中间件。 |
+
+只要请求携带无效或未授权的 `Origin`，一律返回 **403**，包括 OPTIONS 以及 Referer 已获准/缺失的请求。未携带 Origin 时再按 Referer 策略判断；无效或未授权 Referer 同样返回 **403**。允许另一个网页应用时，按需分别配置 fetch/XHR 的 origin 与嵌入图片的 Referer 主机，两个白名单互不替代。
+
+受保护路由只支持 GET、HEAD、OPTIONS。OPTIONS 检查 Origin、请求方法与请求头名称，允许后返回 204；由于浏览器预检可能省略 Referer，预检不要求 Referer。其他方法返回 405。HEAD 在成功和错误时均只返回对应状态/头部，不含正文。跳转、受保护图片和错误响应均带 `Vary: Origin, Referer` 与 `Cache-Control: private, no-store`；预检还对请求方法和请求头名称分流，并保留图片已有的 Vary 值，避免不同调用者共用允许/拒绝响应。覆盖这些头部的“缓存所有内容”规则会破坏此边界。
+
+**部署边界：**
+
+* **Workers：**保护 `/pic` 与 `/api/pic`；`protectAssetImages: true` 时也保护 `/<生成分类>/<文件名>.jpg|jpeg|png|gif|webp`，包括跳转目标和解码后的路径。必须保留 `wrangler.jsonc` 的 `assets.run_worker_first: true`，否则 Cloudflare 默认先返回已匹配静态文件，完全绕过 Worker。HTML 页面、`counts.json`、JS/CSS、图标及非分类资源保持公开。所有请求会执行 Worker，影响请求计费/额度；通过检查后仍经 ASSETS binding 获取图片。
+* **Pages：**`functions/pic.js` 只保护 `/pic`；`/api/pic` 需另加 Pages function/重写，本仓库未生成这个别名。静态图片及 Transform Rules 重写可以绕过跳转函数；如需保护，使用 Pages 中间件或账户级 WAF/防盗链规则。仅启用 `protectAssetImages` 不能保护 Pages 静态文件。
+* **请求头检查不等于身份认证：**客户端可以省略或伪造请求头，允许空 Referer 就会按设计放行这类请求；即便禁止空 Referer，非浏览器客户端仍可伪造白名单值。敏感图片或更强防滥用需求应采用鉴权、签名 URL 或账户级策略。
+
+无需安装依赖或覆盖仓库图片池，即可运行后端契约测试：
+
+```bash
+node --test tests/backend-contract.test.mjs
+python -m unittest discover -s tests -p test_access_policy.py -v
+```
 
 ---
 

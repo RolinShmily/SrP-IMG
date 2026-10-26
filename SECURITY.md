@@ -47,10 +47,26 @@ is live and credit you if you asked for it.
 * Exposed secrets or credentials in the repository or its history.
 * Dependency vulnerabilities that are actually reachable in this codebase.
 
+## Access-policy boundary
+
+`access-policy.json` configures the generated Referer and CORS checks; rebuild and
+redeploy after changes. Unauthorized supplied Origin/Referer values receive 403
+on protected routes. A policy enforcement bypass within that documented boundary
+is in scope. Header checks are not authentication: nonbrowser clients can forge
+headers, and missing Referer is allowed by default for direct/Markdown access.
+
+The Worker protects both redirect routes and, by default, category image files.
+Keep `assets.run_worker_first: true` so existing static assets reach the Worker.
+Pages `functions/pic.js` protects `/pic` only; Pages static files, the unconfigured
+`/api/pic` alias, and rewrites that bypass the function need separate middleware
+or account-level rules. HTML and metadata stay public. See the [README access
+policy](./README.md#-security-boundaries--anti-hotlinking) for configuration,
+matching rules, and cache boundaries.
+
 ## Out of scope
 
 * **Image copyright / licensing complaints** — these are not security issues; see the License section of the [README](./README.md#-license).
-* **Abuse of the public API** (hotlinking, high request volume). The endpoint is public, unauthenticated and serves non-sensitive images by design.
+* **Abuse of the public API** through omitted/forged headers or high request volume. The endpoint remains unauthenticated and serves non-sensitive images by design; violations of its configured header policy are in scope as described above.
 * **Missing hardening on the operator's own domain** — HSTS, WAF rules, rate limiting and similar are configured at the Cloudflare account level, not in this repository.
 * Vulnerabilities in Cloudflare's platform, Next.js, or other upstream dependencies themselves — report those upstream.
 * Findings that require a compromised device, a malicious browser extension, or physical access.

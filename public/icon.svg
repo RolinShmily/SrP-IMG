@@ -1,63 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <!-- Obsidian & Carbon Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#27272A" />
-      <stop offset="35%" stop-color="#18181B" />
-      <stop offset="100%" stop-color="#09090B" />
-    </linearGradient>
-
-    <!-- Solar Amber & Sunset Orange Accent Gradient -->
-    <linearGradient id="solarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FB923C" />
-      <stop offset="50%" stop-color="#F97316" />
-      <stop offset="100%" stop-color="#EA580C" />
-    </linearGradient>
-
-    <!-- Warm Gold Gradient for Aperture / Sun -->
-    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FDE047" />
-      <stop offset="100%" stop-color="#F59E0B" />
-    </linearGradient>
-
-    <!-- Photo Inner Clip -->
-    <clipPath id="innerPhotoClip">
-      <rect x="116" y="116" width="280" height="280" rx="36" />
-    </clipPath>
-  </defs>
-
-  <!-- Squircle Base (Filling frame with tight padding) -->
-  <rect x="12" y="12" width="488" height="488" rx="122" fill="url(#bgGrad)" />
-
-  <!-- Outer Glass Border Rim -->
-  <rect x="14" y="14" width="484" height="484" rx="120" fill="none" stroke="rgba(255, 255, 255, 0.16)" stroke-width="4" />
-
-  <!-- Back Layered Photo Card (Offset & subtle rotation) -->
-  <rect x="116" y="92" width="280" height="280" rx="40" fill="rgba(255, 255, 255, 0.09)" stroke="rgba(255, 255, 255, 0.18)" stroke-width="3" transform="rotate(-6 256 232)" />
-
-  <!-- Front Photo Frame Card -->
-  <rect x="104" y="104" width="304" height="304" rx="46" fill="#FFFFFF" />
-
-  <!-- Photo Area with Sunset Horizon Landscape -->
-  <g clip-path="url(#innerPhotoClip)">
-    <rect x="116" y="116" width="280" height="280" fill="#FAFAF9" />
-    
-    <!-- Radiant Golden Sun -->
-    <circle cx="196" cy="186" r="32" fill="url(#sunGrad)" />
-
-    <!-- Mountain 1 (Back, warm stone gray) -->
-    <path d="M100 396 L205 255 L310 396 Z" fill="#71717A" opacity="0.35" />
-    
-    <!-- Mountain 2 (Front, Charcoal / Carbon) -->
-    <path d="M165 396 L270 220 L385 396 Z" fill="#18181B" />
-
-    <!-- Mountain 3 (Right, Sunset Amber Glow Peak) -->
-    <path d="M250 396 L335 285 L415 396 Z" fill="url(#solarGrad)" opacity="0.95" />
-  </g>
-
-  <!-- Amber Sparkle Star (Top Right Corner) -->
-  <path d="M400 76 C400 110 415 125 449 125 C415 125 400 140 400 174 C400 140 385 125 351 125 C385 125 400 110 400 76 Z" fill="url(#solarGrad)" />
-
-  <!-- Diamond Sparkle Accent (Bottom Left) -->
-  <path d="M84 366 C84 382 92 390 108 390 C92 390 84 398 84 414 C84 398 76 390 60 390 C76 390 84 382 84 366 Z" fill="rgba(255, 255, 255, 0.7)" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>SrP-IMG</title>
+  <rect width="64" height="64" rx="16" fill="#102C26"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" stroke="#B3F4D0" stroke-opacity=".18" stroke-width="2"/>
+  <rect x="19" y="12" width="34" height="34" rx="8" fill="#B3F4D0" fill-opacity=".16"/>
+  <rect x="11" y="19" width="38" height="34" rx="8" fill="#B3F4D0"/>
+  <path d="M17 44 26 33l8 9 6-7 3 4v6a2 2 0 0 1-2 2H19a2 2 0 0 1-2-2v-1Z" fill="#102C26"/>
+  <circle cx="23" cy="28" r="4" fill="#102C26"/>
+  <path d="m49 10 2.5 6.5L58 19l-6.5 2.5L49 28l-2.5-6.5L40 19l6.5-2.5L49 10Z" fill="#F5F7E9"/>
 </svg>

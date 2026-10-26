@@ -75,8 +75,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -120,10 +120,28 @@
     @apply border-border outline-ring/50;
   }
   html {
-    @apply scroll-smooth;
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+  button:not(:disabled), summary, [role="button"] {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  code, pre {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -134,5 +152,56 @@
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+/* Avoid scaling or translating page text during route transitions. */
+.gallery-enter {
+  animation: route-reveal 140ms ease-out both;
+}
+.route-enter main {
+  animation: route-reveal 180ms ease-out both;
+}
+
+@keyframes route-reveal {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+.nav-pending {
+  position: absolute;
+  inset: auto 12px 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: opacity 100ms ease;
+}
+
+.preview-stage {
+  height: clamp(20rem, 52vw, 34rem);
+  background-color: var(--muted);
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  z-index: 100;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--foreground);
+  color: var(--background);
+  clip-path: inset(50%);
+}
+.skip-link:focus { clip-path: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
