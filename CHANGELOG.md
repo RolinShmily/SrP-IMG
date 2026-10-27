@@ -11,10 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.0] - 2026-10-27
+
 ### Added
 
-* **Configurable access & hotlink protection** — `access-policy.json` defines Referer allowlists, missing Referer policy, CORS origins, and direct image asset protection. Both Worker and Pages entries embed the policy with explicit rule comments at build time (`python gen_img.py --access-policy`).
-* **Visual access policy editor** — Interactive policy panel on the `/settings` page with live validation, hostname/origin normalization, JSON preview, clipboard copy, and file download.
+* **Runtime access policy** — Referer and CORS allowlists are read from Worker / Pages environment variables (`REFERER_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and documented toggles), so generated `index.js` / `functions/pic.js` carry no hostnames and the repository publishes no allowlist. Lists are comma- or whitespace-separated; wildcards, case folding, and deduplication are handled in one place. Invalid configuration fails closed with HTTP 500. Denials are answered exactly like a missing image and misconfigurations are never described to the caller, so responses cannot be used to map the rules. Added `.dev.vars.example` for local `wrangler dev`; the README now keeps only a short deployment note instead of restating the full rule set.
 * **Dynamic converging floating capsule header** — Ported from `SrP-BloG`, featuring smooth 8% desktop convergence past 20px of scroll, downwards retract past 350px with instant upward recovery, and an accessible mobile menu drawer.
 * **Modernized SVG brand icon** — Redesigned high-resolution vector icon with a dark forest green squircle base, mint photo frames, depth geometry, and accent glows.
 * **Route enter transitions & loading indicators** — Route transition wrapper (`app/template.tsx`) with non-intrusive opacity reveal, and navbar active/pending feedback via `useLinkStatus`.
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **Synchronized gallery URL state** — Gallery category selection is now single-sourced from URL search parameters, preserving browser back/forward navigation and preventing state divergence.
 * **Typography & rasterization polish** — Fixed font variable circular inheritance, added system CJK font fallbacks, enabled `optimizeLegibility` / `font-synthesis: none`, and eliminated hover subpixel jitter.
 * **Windows static export normalization** — Added post-build script (`scripts/normalize-static-export.mjs`) to bridge Next.js 16 segment prefetch filenames on Windows.
+* **`/settings` reduced to the API reference** — The navigation entry is now just `API`, and the page documents only how to call the endpoints: 302 cards plus the direct paths. The Cloudflare Transform Rules generator and its explanatory copy were removed from the site; the recipe stays in the README for whoever needs it.
 
 ### Fixed
 
@@ -91,5 +95,6 @@ everything that shipped before the tag.
 * The 5MB per-file build limit prevents oversized assets from exhausting CI disk space
   during hash expansion. See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0

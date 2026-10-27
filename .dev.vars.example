@@ -1,0 +1,29 @@
+# Local bindings for `wrangler dev`. Copy to .dev.vars (gitignored) and fill in.
+#
+# These values are the *runtime* access policy for index.js / functions/pic.js.
+# The deployed bundle contains no allowlist, so production values belong in
+# Cloudflare instead:
+#   npx wrangler secret put REFERER_ALLOWED_HOSTS
+#   or Dashboard -> Workers -> your Worker -> Settings -> Variables.
+#
+# Lists are comma- or whitespace-separated, case-insensitive, duplicates removed.
+# *.example.com matches subdomains at a dot boundary but never example.com itself.
+# Booleans: 1/0, true/false, yes/no, on/off. Unset means the default below.
+# An invalid value fails closed with HTTP 500 rather than allowing everything.
+
+# Master switch for the Referer check. Default: 1
+REFERER_ENABLED=1
+# Allow requests that carry no Referer at all (curl, Markdown, address bar). Default: 1
+REFERER_ALLOW_MISSING=1
+# Allow a Referer that matches this service's own origin. Default: 1
+REFERER_ALLOW_SAME_ORIGIN=1
+# Exact hostnames/IPs or *.example.com. Example: blog.example.com,*.example.com
+REFERER_ALLOWED_HOSTS=
+
+# Allow an Origin that matches this service's own origin. Default: 1
+CORS_ALLOW_SAME_ORIGIN=1
+# Exact http(s) origins. Example: https://blog.example.com,http://localhost:3000
+CORS_ALLOWED_ORIGINS=
+
+# Also gate /<category>/<file> image assets, not just /pic. Default: 1
+PROTECT_ASSET_IMAGES=1

@@ -49,18 +49,29 @@ is live and credit you if you asked for it.
 
 ## Access-policy boundary
 
-`access-policy.json` configures the generated Referer and CORS checks; rebuild and
-redeploy after changes. Unauthorized supplied Origin/Referer values receive 403
-on protected routes. A policy enforcement bypass within that documented boundary
-is in scope. Header checks are not authentication: nonbrowser clients can forge
-headers, and missing Referer is allowed by default for direct/Markdown access.
+The Referer and CORS allowlists are Worker / Pages environment variables read at
+request time, deliberately absent from the repository and from the deployed
+bundle. Variable names, list syntax, and defaults are in
+[`.dev.vars.example`](./.dev.vars.example).
+
+Responses are uniform by design: a request rejected by the policy is answered
+exactly like a missing image, and an unparseable configuration is logged and
+answered generically. Neither case tells the caller which rule or setting was
+involved, so responses cannot be used to map the allowlist. Anything that defeats
+that uniformity — for example an error path that echoes the failing rule — is in
+scope.
+
+Header checks are not authentication: non-browser clients can forge headers, and
+missing Referer is allowed by default for direct/Markdown access. Withholding a
+list does not change that, because such a client never needed the list — only one
+plausible hostname.
 
 The Worker protects both redirect routes and, by default, category image files.
 Keep `assets.run_worker_first: true` so existing static assets reach the Worker.
 Pages `functions/pic.js` protects `/pic` only; Pages static files, the unconfigured
 `/api/pic` alias, and rewrites that bypass the function need separate middleware
 or account-level rules. HTML and metadata stay public. See the [README access
-policy](./README.md#-security-boundaries--anti-hotlinking) for configuration,
+policy](./README.md#-access-policy) for the deployment model,
 matching rules, and cache boundaries.
 
 ## Out of scope

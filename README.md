@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
@@ -21,7 +22,7 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 * **Auto Format Detection**: Enforces `.jpg` for `h/v` for universal API client compatibility, while automatically detecting and preserving original extensions (e.g., `.gif`, `.jpeg`, `.png`) for custom categories.
 * **Adaptive Waterfall Gallery**: Automatically derives categories, item counts, and aspect ratios from build metadata; supports English/Chinese i18n, dark/light themes, and Fancybox previews.
 * **Dual Access Modes**: Server-side 302 redirection (API Mode) and Cloudflare Transform Rules edge rewrite (Transparent Mode).
-* **Built-in Security Boundaries**: Referer hotlinking protection (allowing empty Referer for Markdown/direct access) and dynamic CORS policy.
+* **Configurable Access Policy**: Referer and CORS allowlists are supplied as runtime environment variables, never baked into the code or committed to the repository.
 
 ---
 
@@ -41,14 +42,13 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 ├── app/                    # Next.js App Router
 │   ├── page.tsx            # Home showcase & live interactive demo
 │   ├── gallery/            # Dedicated waterfall gallery page
-│   ├── settings/           # API guide & edge configuration center
+│   ├── settings/           # API reference (endpoints & copy formats)
 │   ├── template.tsx        # Client route enter transition wrapper
 │   └── layout.tsx          # Root layout & global metadata
 ├── components/             # React UI components
-│   ├── access-policy-panel.tsx # Hotlink & access policy visual editor
 │   ├── live-preview.tsx    # Live image preview container (zero-crop)
 │   ├── image-gallery.tsx   # Core waterfall gallery component
-│   └── api-panel.tsx       # Interactive API copy & rule generator panel
+│   └── api-panel.tsx       # API endpoint cards with URL / Markdown / HTML copy
 ├── lib/                    # Shared libraries & typed translations
 │   ├── i18n.tsx            # Internationalization context & core strings
 │   ├── api-translations.ts # API guide bilingual translations
@@ -58,9 +58,9 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 ├── tests/                  # Automated test suite
 │   ├── backend-contract.test.mjs   # Worker / Pages security & HTTP contract tests
 │   ├── static-export.test.mjs      # Next.js static export regression tests
-│   └── test_access_policy.py       # Access policy generator & validation tests
+│   └── test_access_policy.py       # Runtime-policy env format & generator checks
 ├── gen_img.py              # Build script: asset scanning, hash mapping & metadata generation
-├── access-policy.json      # Build-time Referer/CORS and image access policy
+├── .dev.vars.example       # Template for local Worker env bindings (policy)
 ├── index.js                # Cloudflare Workers entrypoint
 ├── wrangler.jsonc          # Cloudflare Workers configuration
 ├── README.md               # English documentation
@@ -215,58 +215,32 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ---
 
-### 🛡️ Security Boundaries & Anti-Hotlinking
+### 🛡️ Access policy
 
-The Config & API page includes a bilingual policy editor with validation, JSON preview, and configuration download. It edits a browser draft; it does not change the deployed service.
-
-[access-policy.json](./access-policy.json) is the single build-time configuration for both generated backends. Edit it, then regenerate before building/deploying; editing the JSON after deployment has no effect. The generated `index.js` and `functions/pic.js` explicitly include the policy and matching rules in comments.
+The allowlist is runtime configuration, not build input. `index.js` and
+`functions/pic.js` are generated without any hostname and read their policy from
+Worker / Pages environment variables on every request, so neither the repository,
+the build artifact, nor the deployed bundle contains your domains. Deploy as
+usual, then set the values — Cloudflare stores them encrypted and the next
+request picks them up, with no rebuild:
 
 ```bash
-python gen_img.py --access-policy ./access-policy.json --hash-length 2
+npx wrangler secret put REFERER_ALLOWED_HOSTS
 ```
 
-`--access-policy` is optional: the default is `./access-policy.json` in the working directory. If that implicit file is absent, the same portable defaults apply. An explicitly selected missing/invalid file, unknown/missing fields, invalid host patterns, or invalid origins fail the build before image output changes. No project domain or localhost exception is hardcoded.
+[`.dev.vars.example`](./.dev.vars.example) documents every supported variable,
+the list/boolean syntax, and the defaults; it is also the file `wrangler dev`
+reads locally. Nothing about the policy is rendered by the site itself: rule
+names, syntax, and defaults live only in that file and in the Worker source.
 
-The complete v1 configuration (all fields required) defaults to:
+A request rejected by the policy is answered exactly like a missing image, and a
+misconfiguration is logged rather than described to the caller, so responses
+cannot be used to map the rules. Header checks are not authentication: see
+[SECURITY.md](SECURITY.md) for that boundary and for the Workers-vs-Pages
+differences.
 
-```json
-{
-  "version": 1,
-  "referer": {
-    "enabled": true,
-    "allowMissing": true,
-    "allowSameOrigin": true,
-    "allowedHosts": []
-  },
-  "cors": {
-    "allowSameOrigin": true,
-    "allowedOrigins": []
-  },
-  "protectAssetImages": true
-}
-```
-
-| Setting | Behavior |
-| :--- | :--- |
-| `referer.enabled` | Enable Referer checks. Disabling this does not disable Origin checks. |
-| `referer.allowMissing` | Allow absent/empty Referer, useful for direct requests, curl, and Markdown. Set false to require Referer on GET/HEAD. |
-| `referer.allowSameOrigin` | Allow a Referer whose origin matches the actual request URL (scheme, host, and port). |
-| `referer.allowedHosts` | Case-insensitive exact hostnames/IPs or `*.example.com` suffix patterns; no scheme, path, or port. A wildcard matches `a.example.com` and `a.b.example.com`, but excludes `example.com` and `badexample.com`. Add the root hostname separately. Exact hosts do not include subdomains. Use ASCII/punycode for international names. |
-| `cors.allowSameOrigin` | Allow an Origin matching the actual request URL. |
-| `cors.allowedOrigins` | Independent exact origins, e.g. `["https://client.example", "http://localhost:3000"]`. Include scheme and any nondefault port; no path, trailing slash, credentials, `null`, or wildcards. Scheme/port differences require separate entries. |
-| `protectAssetImages` | In Workers, apply both checks to image files in generated category directories. It does not add Pages middleware. |
-
-A supplied invalid or unauthorized `Origin` receives **403**, including preflight and requests that have an allowed/missing Referer. An absent Origin is allowed, then Referer policy is evaluated separately; an invalid or unauthorized Referer also receives **403**. To allow another web application, configure its origin for fetch/XHR and its host for image embedding as needed. CORS membership does not grant Referer membership.
-
-Only GET, HEAD, and OPTIONS are supported on protected routes. OPTIONS validates Origin, requested method, and header names, returns 204 when accepted, and deliberately does not require Referer (browsers may omit it). Unsupported methods return 405. HEAD returns the same status/headers with no body, including errors. Redirects, protected assets, and errors carry `Vary: Origin, Referer` and `Cache-Control: private, no-store`; preflights additionally vary on requested method/header names. Existing asset Vary values are preserved. These headers avoid sharing an allow/deny response across callers; overriding them with a cache-everything rule can invalidate the boundary.
-
-**Deployment boundaries**:
-
-* **Workers**: `/pic` and `/api/pic` are protected. With `protectAssetImages: true`, `/<generated-category>/<filename>.jpg|jpeg|png|gif|webp` is also checked, including redirect destinations and decoded paths. Keep `assets.run_worker_first: true` in `wrangler.jsonc`: Cloudflare's default asset-first routing otherwise serves existing files without invoking the Worker. HTML pages, `counts.json`, JavaScript/CSS, icons, and unrelated assets remain public. All requests now invoke the Worker, which affects request billing/limits; accepted images still use the ASSETS binding internally.
-* **Pages**: `functions/pic.js` protects `/pic` only. A separate Pages function/rewrite is needed for `/api/pic`; this repository does not generate that alias. Static image files and Transform Rule rewrites can bypass the redirect function. Use Pages middleware or account-level WAF/hotlink rules if those must be protected. The `protectAssetImages` switch alone cannot protect Pages static files.
-* **Header checks are not authentication**: clients can omit or forge headers; allowing missing Referer permits such requests by design. Even with missing Referer denied, a nonbrowser client can forge an allowed value. Use authentication/signed URLs or account-level controls for confidential assets or stronger abuse protection.
-
-Run the backend contract checks without installing dependencies or regenerating repository image pools:
+Run the backend contract checks without installing dependencies or regenerating
+repository image pools:
 
 ```bash
 node --test tests/backend-contract.test.mjs

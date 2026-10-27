@@ -11,10 +11,13 @@
 
 ## [Unreleased]
 
+暂无。
+
+## [0.2.0] - 2026-10-27
+
 ### 新增
 
-* **防盗链与访问策略配置化** —— 引入根目录 `access-policy.json`，支持 Referer 白名单、空 Referer 放行策略、CORS Origin 及图片直链保护配置。构建时由 `gen_img.py --access-policy` 自动内嵌至 Worker 与 Pages 代码中。
-* **可视化访问策略配置面板** —— 在 `/settings` 页面新增交互式配置卡片，支持实时格式校验、当前站点快捷添加、JSON 预览、一键复制与配置文件直接下载。
+* **访问策略改为运行时读取** —— Referer 与 CORS 白名单改由 Worker / Pages 环境变量提供（`REFERER_ALLOWED_HOSTS`、`CORS_ALLOWED_ORIGINS` 及若干开关），生成的 `index.js` / `functions/pic.js` 不含任何域名，仓库也不再公开白名单。列表支持逗号或空白分隔，通配符、大小写与去重统一处理；配置非法时 fail closed 返回 HTTP 500。被拒绝的请求与不存在的图片返回完全相同的响应，配置错误也不回显给调用方，因此无法用响应差异反推规则。新增 `.dev.vars.example` 供本地 `wrangler dev` 使用；README 只保留简短部署说明，不再复述完整规则集。
 * **动态收敛浮动胶囊导航栏** —— 参考 `SrP-BloG` 实现，页面下滚超 20px 时桌面端两侧平滑向内收敛 8% 并形成毛玻璃立体胶囊；下滚超 350px 自动向上收起、上滚瞬间回显；移动端集成丝滑展开的抽屉面板。
 * **全新品牌 SVG 图标** —— 重新设计高分辨率矢量图标（深森林绿圆角底板 + 薄荷绿双层相框与景深山峦），小尺寸与各级 DPI 下均保持清晰锐利。
 * **动态路由平滑进入过渡与加载状态** —— 增加 `app/template.tsx` 路由过渡容器，搭配不破坏文本栅格化的渐显动画；导航栏集成 `useLinkStatus` 实时显示路由加载微标。
@@ -27,6 +30,7 @@
 * **画廊 URL 与浏览器历史深度同步** —— 画廊分类切换改为以 URL 查询参数（`?cat=`）为单一真理源，完整支持浏览器前进、后退（History API）。
 * **字体抗锯齿与像素锯齿优化** —— 修复字体变量同名循环引用，补全中文字体栈备选，启用清晰排版属性并清除文本容器的浮点缩放与滤镜抖动。
 * **Windows 静态导出预取修复** —— 增加构建后处理脚本（`scripts/normalize-static-export.mjs`），修复 Next 16 在 Windows 平台下导出静态片段文件名的反斜杠路径问题。
+* **`/settings` 收敛为 API 参考** —— 导航项改为 `API`，页面只讲怎么调接口：302 卡片与直链路径。Cloudflare Transform Rules 生成器及其说明整块从站点移除，配置方法保留在 README 里供需要的人查阅。
 
 ### 修复
 
@@ -83,5 +87,6 @@
 * 单文件 5MB 的构建限制可避免超大素材在哈希扩散阶段耗尽 CI 磁盘空间。
   漏洞报告方式见 [SECURITY.zh.md](SECURITY.zh.md)。
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0

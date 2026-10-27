@@ -11,7 +11,6 @@ Produces:
 import argparse
 from dataclasses import dataclass, field
 import datetime
-import ipaddress
 from itertools import cycle
 import json
 from pathlib import Path
@@ -20,7 +19,6 @@ import shutil
 import struct
 import sys
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlsplit
 
 # Defaults
 DEFAULT_HASH_LENGTH = 2
@@ -163,104 +161,6 @@ TINY_PNG = bytes([
 ])
 
 
-def default_access_policy() -> dict:
-    """Portable defaults when no access-policy.json exists in the working directory."""
-    return {
-        'version': 1,
-        'referer': {
-            'enabled': True,
-            'allowMissing': True,
-            'allowSameOrigin': True,
-            'allowedHosts': [],
-        },
-        'cors': {'allowSameOrigin': True, 'allowedOrigins': []},
-        'protectAssetImages': True,
-    }
-
-
-def validate_access_policy(policy: dict) -> dict:
-    """Validate the complete v1 configuration; typos must fail the build closed."""
-    def check_keys(value, keys, location):
-        if not isinstance(value, dict) or set(value) != set(keys):
-            raise ValueError(f'{location} must contain exactly: {", ".join(keys)}')
-
-    def check_bool(value, location):
-        if type(value) is not bool:
-            raise ValueError(f'{location} must be a JSON boolean')
-
-    def check_host(host):
-        if not isinstance(host, str) or not host or host != host.strip():
-            raise ValueError('hostnames must be nonempty strings without whitespace')
-        try:
-            ipaddress.ip_address(host)
-            return
-        except ValueError:
-            if len(host) > 253 or not all(
-                re.fullmatch(r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?', label)
-                for label in host.split('.')
-            ):
-                raise ValueError(f'invalid hostname: {host!r}') from None
-
-    check_keys(policy, ('version', 'referer', 'cors', 'protectAssetImages'), 'access policy')
-    if type(policy['version']) is not int or policy['version'] != 1:
-        raise ValueError('access policy version must be 1')
-    ref = policy['referer']
-    cors = policy['cors']
-    check_keys(ref, ('enabled', 'allowMissing', 'allowSameOrigin', 'allowedHosts'), 'referer')
-    check_keys(cors, ('allowSameOrigin', 'allowedOrigins'), 'cors')
-    for name in ('enabled', 'allowMissing', 'allowSameOrigin'):
-        check_bool(ref[name], f'referer.{name}')
-    check_bool(cors['allowSameOrigin'], 'cors.allowSameOrigin')
-    check_bool(policy['protectAssetImages'], 'protectAssetImages')
-    if not isinstance(ref['allowedHosts'], list) or not isinstance(cors['allowedOrigins'], list):
-        raise ValueError('allowedHosts and allowedOrigins must be arrays')
-    hosts = []
-    for pattern in ref['allowedHosts']:
-        if not isinstance(pattern, str):
-            raise ValueError('referer.allowedHosts entries must be strings')
-        host = pattern[2:] if pattern.startswith('*.') else pattern
-        check_host(host)
-        try:
-            address = ipaddress.ip_address(host)
-        except ValueError:
-            address = None
-        if pattern.startswith('*.') and address is not None:
-            raise ValueError('wildcard IP addresses are not supported')
-        hosts.append(address.compressed if address is not None else pattern.lower())
-    origins = []
-    for origin in cors['allowedOrigins']:
-        if (not isinstance(origin, str) or not origin or
-                any(ord(char) <= 32 or ord(char) == 127 for char in origin) or '\\' in origin):
-            raise ValueError('cors.allowedOrigins entries must be exact HTTP(S) origins')
-        parsed = urlsplit(origin)
-        if (parsed.scheme not in ('http', 'https') or not parsed.hostname or
-                parsed.username is not None or parsed.password is not None or
-                parsed.path or parsed.netloc.endswith(':') or '?' in origin or '#' in origin):
-            raise ValueError(f'invalid CORS origin: {origin!r}; use scheme://host[:port]')
-        check_host(parsed.hostname)
-        port = parsed.port  # Raises ValueError for malformed or out-of-range ports.
-        hostname = parsed.hostname.lower()
-        if ':' in hostname:
-            hostname = f'[{ipaddress.ip_address(hostname).compressed}]'
-        default_port = 443 if parsed.scheme == 'https' else 80
-        port_suffix = f':{port}' if port is not None and port != default_port else ''
-        origins.append(f'{parsed.scheme}://{hostname}{port_suffix}')
-    return {
-        'version': 1,
-        'referer': {**ref, 'allowedHosts': hosts},
-        'cors': {**cors, 'allowedOrigins': origins},
-        'protectAssetImages': policy['protectAssetImages'],
-    }
-
-
-def load_access_policy(path: Optional[Path] = None) -> dict:
-    selected = path if path is not None else Path('access-policy.json')
-    if path is None and not selected.exists():
-        return default_access_policy()
-    with selected.open('r', encoding='utf-8-sig') as source:
-        return validate_access_policy(json.load(source))
-
-
 @dataclass
 class Config:
     hash_length: int = DEFAULT_HASH_LENGTH
@@ -271,7 +171,6 @@ class Config:
     functions_dir: Path = FUNCTIONS_DIR
     size_limit_mb: float = SIZE_LIMIT_MB
     allowed_extensions: tuple = field(default_factory=lambda: ALLOWED_EXTENSIONS)
-    access_policy: dict = field(default_factory=default_access_policy)
 
     def __post_init__(self):
         if not self.default_ext.startswith('.'):
@@ -302,21 +201,11 @@ class Config:
             action='store_true',
             help="Generate lightweight placeholder files instead of copying image binaries"
         )
-        parser.add_argument(
-            '--access-policy',
-            type=Path,
-            help='Access policy JSON to embed in both backends (default: ./access-policy.json, or portable defaults if absent)'
-        )
         args = parser.parse_args(argv)
-        try:
-            access_policy = load_access_policy(args.access_policy)
-        except (OSError, ValueError) as exc:
-            parser.error(f'cannot load access policy: {exc}')
         return cls(
             hash_length=args.hash_length,
             default_ext=args.ext,
             no_copy=args.no_copy,
-            access_policy=access_policy,
         )
 
 
@@ -577,24 +466,51 @@ class WorkerGenerator:
             }
             for cat in sorted(counts)
         }
-        policy = validate_access_policy(self.config.access_policy)
         core_logic = f"""
-// Generated by gen_img.py. Edit access-policy.json, then regenerate both backends.
-// ACCESS_POLICY is embedded at build time, not loaded from the network or env.
-// Referer: exact hosts match only themselves; *.example.com matches subdomains
-// at a dot boundary (including nested ones), but never example.com itself.
-// CORS: exact HTTP(S) origins, independent of Referer hosts. A supplied Origin
-// must be allowed, even when Referer is absent or its validation is disabled.
-// Same-origin permission uses the actual request URL; no deployment domain is hardcoded.
-// OPTIONS checks Origin, not Referer: browsers may omit Referer on preflight.
-// Missing Referer is controlled explicitly and is not authentication.
-const ACCESS_POLICY = {json.dumps(policy, ensure_ascii=True, indent=2)};
+// Generated by gen_img.py. No allowlist is embedded in this file: the access
+// policy is read from Worker environment variables at request time, so the
+// deployed bundle carries no hostnames. Set the values in the Cloudflare
+// dashboard, with `wrangler secret put`, or in a gitignored .dev.vars file for
+// `wrangler dev`. See the key list below.
+//
+//   REFERER_ENABLED=1            master switch for the Referer check
+//   REFERER_ALLOW_MISSING=1      allow requests that carry no Referer at all
+//   REFERER_ALLOW_SAME_ORIGIN=1  allow a Referer matching the request URL
+//   REFERER_ALLOWED_HOSTS=       list: exact host/IP or *.example.com
+//   CORS_ALLOW_SAME_ORIGIN=1     allow an Origin matching the request URL
+//   CORS_ALLOWED_ORIGINS=        list: exact scheme://host[:port]
+//   PROTECT_ASSET_IMAGES=1       also gate /<category>/<file> image assets
+//
+// Lists are comma- or whitespace-separated (newlines are fine), case-insensitive,
+// with duplicates removed. *.example.com matches subdomains at a dot boundary
+// (including nested ones) but never example.com itself. Booleans accept
+// 1/0, true/false, yes/no, on/off; unset means the default shown above. An
+// invalid value fails closed with HTTP 500 instead of silently opening up.
+// Referer and Origin are client-sent headers: this deters casual hotlinking, it
+// is not authentication, and it cannot stop a client that sets its own headers.
 const HASH_LENGTH = {hl};
 const IMAGE_EXT = {json.dumps(ext)};
 const TARGETS = JSON.parse({json.dumps(json.dumps(targets, ensure_ascii=True))});
 """ + r"""
 const MOBILE_UA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
 const METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+const POLICY_ENV_NAMES = [
+    'REFERER_ENABLED',
+    'REFERER_ALLOW_MISSING',
+    'REFERER_ALLOW_SAME_ORIGIN',
+    'REFERER_ALLOWED_HOSTS',
+    'CORS_ALLOW_SAME_ORIGIN',
+    'CORS_ALLOWED_ORIGINS',
+    'PROTECT_ASSET_IMAGES',
+];
+const TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const FALSE_VALUES = new Set(['0', 'false', 'no', 'off']);
+const HOSTNAME_PATTERN = /^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/;
+const IPV6_PATTERN = /^[0-9a-f:.]+$/;
+
+// Parsed once per distinct configuration, so per-request cost is a string join.
+let policyCache = { key: null, policy: null, error: null };
 
 function parseHttpUrl(value) {
     if (!/^https?:\/\//i.test(value) || /[\u0000-\u0020\u007f\\]/.test(value)) return null;
@@ -607,31 +523,124 @@ function parseHttpUrl(value) {
     }
 }
 
-function allowedOrigin(request) {
+function readFlag(source, name, fallback) {
+    const raw = source[name];
+    if (raw === undefined || raw === null || String(raw).trim() === '') return fallback;
+    const value = String(raw).trim().toLowerCase();
+    if (TRUE_VALUES.has(value)) return true;
+    if (FALSE_VALUES.has(value)) return false;
+    throw new Error(name + ' must be a boolean (1/0, true/false, yes/no, on/off), got ' + JSON.stringify(raw));
+}
+
+function readList(source, name) {
+    const raw = source[name];
+    if (raw === undefined || raw === null) return [];
+    const values = new Set();
+    for (const entry of String(raw).split(/[\s,]+/)) {
+        const value = entry.trim().toLowerCase();
+        if (value) values.add(value);
+    }
+    return [...values];
+}
+
+function isIPv4Literal(host) {
+    const labels = host.split('.');
+    return labels.length === 4 && labels.every(label => /^(0|[1-9][0-9]{0,2})$/.test(label) && Number(label) <= 255);
+}
+
+function isValidHostPattern(pattern) {
+    const wildcard = pattern.startsWith('*.');
+    const host = wildcard ? pattern.slice(2) : pattern;
+    // A wildcard over an IP literal would silently match nothing useful, so it
+    // is rejected as a typo instead of quietly narrowing the allowlist.
+    if (host.includes(':')) return !wildcard && IPV6_PATTERN.test(host);
+    if (wildcard && isIPv4Literal(host)) return false;
+    return HOSTNAME_PATTERN.test(host);
+}
+
+function buildPolicy(env) {
+    const source = env || {};
+    const hosts = readList(source, 'REFERER_ALLOWED_HOSTS');
+    for (const host of hosts) {
+        if (!isValidHostPattern(host)) {
+            throw new Error('REFERER_ALLOWED_HOSTS has an invalid entry: ' + JSON.stringify(host));
+        }
+    }
+    const origins = readList(source, 'CORS_ALLOWED_ORIGINS');
+    for (const origin of origins) {
+        // Origins are compared verbatim, so a wildcard would silently never match.
+        const parsed = origin.includes('*') ? null : parseHttpUrl(origin);
+        if (!parsed || parsed.origin.toLowerCase() !== origin) {
+            throw new Error('CORS_ALLOWED_ORIGINS needs exact http(s) origins, got ' + JSON.stringify(origin));
+        }
+    }
+    return {
+        referer: {
+            enabled: readFlag(source, 'REFERER_ENABLED', true),
+            allowMissing: readFlag(source, 'REFERER_ALLOW_MISSING', true),
+            allowSameOrigin: readFlag(source, 'REFERER_ALLOW_SAME_ORIGIN', true),
+            allowedHosts: hosts,
+        },
+        cors: {
+            allowSameOrigin: readFlag(source, 'CORS_ALLOW_SAME_ORIGIN', true),
+            allowedOrigins: origins,
+        },
+        protectAssetImages: readFlag(source, 'PROTECT_ASSET_IMAGES', true),
+    };
+}
+
+function resolvePolicy(env) {
+    const source = env || {};
+    const key = POLICY_ENV_NAMES.map(name => String(source[name] ?? '')).join('\u0000');
+    if (policyCache.key === key) return policyCache;
+    try {
+        policyCache = { key, policy: buildPolicy(source), error: null };
+    } catch (err) {
+        // Fail closed: a typo in a secret must not silently allow everything.
+        console.error('invalid access policy configuration:', err.message);
+        policyCache = { key, policy: null, error: err.message };
+    }
+    return policyCache;
+}
+
+function misconfigured(request) {
+    // The reason is logged, never returned: a client must not be able to tell a
+    // misconfigured deployment from any other server-side failure.
+    return new Response(request.method === 'HEAD' ? null : '500 Internal Error', {
+        status: 500,
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'private, no-store',
+            Vary: 'Origin, Referer',
+        },
+    });
+}
+
+function allowedOrigin(request, policy) {
     const origin = request.headers.get('Origin');
     if (origin === null) return true;
     const parsed = parseHttpUrl(origin);
     if (!parsed || parsed.origin !== origin) return false;
-    return (ACCESS_POLICY.cors.allowSameOrigin && origin === new URL(request.url).origin) ||
-        ACCESS_POLICY.cors.allowedOrigins.includes(origin);
+    return (policy.cors.allowSameOrigin && origin === new URL(request.url).origin) ||
+        policy.cors.allowedOrigins.includes(origin.toLowerCase());
 }
 
-function allowedReferer(request) {
-    const policy = ACCESS_POLICY.referer;
-    if (!policy.enabled) return true;
+function allowedReferer(request, policy) {
+    const rules = policy.referer;
+    if (!rules.enabled) return true;
     const referer = request.headers.get('Referer');
-    if (referer === null || referer.trim() === '') return policy.allowMissing;
+    if (referer === null || referer.trim() === '') return rules.allowMissing;
     const parsed = parseHttpUrl(referer);
     if (!parsed) return false;
-    if (policy.allowSameOrigin && parsed.origin === new URL(request.url).origin) return true;
+    if (rules.allowSameOrigin && parsed.origin === new URL(request.url).origin) return true;
     // URL.hostname includes brackets for IPv6; configuration uses plain IP literals.
     const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-    return policy.allowedHosts.some(pattern => pattern.startsWith('*.')
+    return rules.allowedHosts.some(pattern => pattern.startsWith('*.')
         ? host.endsWith(pattern.slice(1)) && host !== pattern.slice(2)
         : host === pattern);
 }
 
-function responseHeaders(request, initial = {}) {
+function responseHeaders(request, policy, initial = {}) {
     const headers = new Headers(initial);
     const vary = new Set((headers.get('Vary') || '').split(',').map(s => s.trim()).filter(Boolean));
     for (const field of ['Origin', 'Referer']) vary.add(field);
@@ -647,40 +656,46 @@ function responseHeaders(request, initial = {}) {
         headers.delete(name);
     }
     const origin = request.headers.get('Origin');
-    if (origin !== null && allowedOrigin(request)) headers.set('Access-Control-Allow-Origin', origin);
+    if (origin !== null && allowedOrigin(request, policy)) headers.set('Access-Control-Allow-Origin', origin);
     return headers;
 }
 
-function errorResponse(request, status, message, initial = {}) {
-    const headers = responseHeaders(request, initial);
+function errorResponse(request, policy, status, message, initial = {}) {
+    const headers = responseHeaders(request, policy, initial);
     headers.set('Content-Type', 'text/plain; charset=utf-8');
     return new Response(request.method === 'HEAD' ? null : message, { status, headers });
 }
 
-function checkAccess(request) {
-    if (!allowedOrigin(request)) return errorResponse(request, 403, '403 Forbidden: Origin not allowed');
+function checkAccess(request, policy) {
+    if (!allowedOrigin(request, policy)) {
+        // Denials are indistinguishable from "no such image": answering 403 with a
+        // reason would let a caller binary-search the allowlist rule by rule.
+        return errorResponse(request, policy, 404, '404 Not Found');
+    }
     if (!METHODS.includes(request.method)) {
-        return errorResponse(request, 405, '405 Method Not Allowed', { Allow: METHODS.join(', ') });
+        return errorResponse(request, policy, 405, '405 Method Not Allowed', { Allow: METHODS.join(', ') });
     }
     if (request.method === 'OPTIONS') {
         const method = request.headers.get('Access-Control-Request-Method');
         if (method !== null && !['GET', 'HEAD'].includes(method)) {
-            return errorResponse(request, 405, '405 Preflight Method Not Allowed', { Allow: METHODS.join(', ') });
+            return errorResponse(request, policy, 405, '405 Preflight Method Not Allowed', { Allow: METHODS.join(', ') });
         }
-        const headers = responseHeaders(request);
+        const headers = responseHeaders(request, policy);
         headers.set('Access-Control-Allow-Methods', METHODS.join(', '));
         const requestedHeaders = request.headers.get('Access-Control-Request-Headers');
         if (requestedHeaders) {
             // Reflect only syntactically valid HTTP field names, never arbitrary input.
             if (!requestedHeaders.split(',').every(name => /^[!#$%&'*+.^_\x60|~0-9A-Za-z-]+$/.test(name.trim()))) {
-                return errorResponse(request, 400, '400 Invalid Preflight Headers');
+                return errorResponse(request, policy, 400, '400 Invalid Preflight Headers');
             }
             headers.set('Access-Control-Allow-Headers', requestedHeaders);
         }
         headers.set('Access-Control-Max-Age', '86400');
         return new Response(null, { status: 204, headers });
     }
-    if (!allowedReferer(request)) return errorResponse(request, 403, '403 Forbidden: Referer not allowed');
+    if (!allowedReferer(request, policy)) {
+        return errorResponse(request, policy, 404, '404 Not Found');
+    }
     return null;
 }
 
@@ -699,28 +714,33 @@ function resolveTarget(request) {
     return Object.prototype.hasOwnProperty.call(TARGETS, requested) ? TARGETS[requested] : null;
 }
 
-function handleRequest(request) {
+function handleRequest(request, env) {
+    const resolved = resolvePolicy(env);
+    if (resolved.error) return misconfigured(request);
+    const policy = resolved.policy;
     try {
-        const blocked = checkAccess(request);
+        const blocked = checkAccess(request, policy);
         if (blocked) return blocked;
         const target = resolveTarget(request);
-        if (!target || target.slots < 1) return errorResponse(request, 404, '404 Not Found');
+        if (!target || target.slots < 1) return errorResponse(request, policy, 404, '404 Not Found');
         return new Response(null, {
             status: 302,
-            headers: responseHeaders(request, { Location: randomImagePath(target) }),
+            headers: responseHeaders(request, policy, { Location: randomImagePath(target) }),
         });
     } catch (err) {
         console.error('pic handler failed:', err);
-        return errorResponse(request, 500, 'Internal Error');
+        return errorResponse(request, policy, 500, 'Internal Error');
     }
 }
 """
 
         code_functions = core_logic + """
-// Cloudflare Pages: this file protects /pic only. /api/pic requires a separate
+// Cloudflare Pages: this file protects /pic only. /api/pic needs a separate
 // Pages route; static image protection requires Pages middleware or edge rules.
+// Read the policy from `context.env` so the allowlist lives in Pages environment
+// variables rather than in this bundle.
 export function onRequest(context) {
-    return handleRequest(context.request);
+    return handleRequest(context.request, context.env);
 }
 """
 
@@ -741,24 +761,27 @@ function isCategoryImage(pathname) {
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
-        if (url.pathname === '/pic' || url.pathname === '/api/pic') return handleRequest(request);
-        if (!ACCESS_POLICY.protectAssetImages || !isCategoryImage(url.pathname)) {
+        if (url.pathname === '/pic' || url.pathname === '/api/pic') return handleRequest(request, env);
+        const resolved = resolvePolicy(env);
+        if (resolved.error) return misconfigured(request);
+        const policy = resolved.policy;
+        if (!policy.protectAssetImages || !isCategoryImage(url.pathname)) {
             return env.ASSETS.fetch(request);
         }
         // Requires assets.run_worker_first = true. Otherwise asset hits bypass
         // the Worker entirely; env.ASSETS.fetch safely delegates after the check.
         try {
-            const blocked = checkAccess(request);
+            const blocked = checkAccess(request, policy);
             if (blocked) return blocked;
             const asset = await env.ASSETS.fetch(request);
             return new Response(request.method === 'HEAD' ? null : asset.body, {
                 status: asset.status,
                 statusText: asset.statusText,
-                headers: responseHeaders(request, asset.headers),
+                headers: responseHeaders(request, policy, asset.headers),
             });
         } catch (err) {
             console.error('protected image asset failed:', err);
-            return errorResponse(request, 500, 'Internal Error');
+            return errorResponse(request, policy, 500, 'Internal Error');
         }
     }
 };

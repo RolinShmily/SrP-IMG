@@ -69,32 +69,6 @@ export interface Translations {
   settings: {
     title: string;
     subtitle: string;
-    baseDomain: string;
-    copy: string;
-    copied: string;
-    all: string;
-    tabQuery: string;
-    tabDirect: string;
-    queryBanner: string;
-    directBanner: string;
-    cfGuideTitle: string;
-    cfGuideTag: string;
-    cfGuideDesc: string;
-    cfExpand: string;
-    cfCollapse: string;
-    rule1Title: string;
-    rule1Desc: string;
-    rule2Title: string;
-    rule2Desc: string;
-    rule3Title: string;
-    rule3Desc: string;
-    currentRulesTitle: string;
-    dynamicNote: string;
-    matchLabel: string;
-    rewriteLabel: string;
-    copyMatch: string;
-    copyRewrite: string;
-    extSuffix: string;
   };
   categories: {
     h: string;
@@ -114,7 +88,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     nav: {
       home: "首页",
       gallery: "画廊",
-      settings: "配置 & API",
+      settings: "API",
       github: "开源仓库",
       primary: "主导航",
       switchTheme: "切换明暗主题",
@@ -149,10 +123,10 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       featuresSubtitle: "专为边缘 Serverless 调优的高性能设计",
       featFreeTitle: "静态托管与边缘分发",
       featFreeDesc: "图片可由 Cloudflare 静态资产分发。启用 Worker 直链保护会执行 Worker，额度取决于部署方式与套餐。",
-      featEdgeTitle: "无感边缘重写",
-      featEdgeDesc: "URL 保持极简优雅（如 /h, /a），浏览器地址栏无痕不变，直接输出高清图片流。",
-      featSecurityTitle: "可配置的访问保护",
-      featSecurityDesc: "独立配置 Referer 白名单、空 Referer 策略与 CORS Origin，生成代码时写入 Worker，重新部署后生效。",
+      featEdgeTitle: "自适应瀑布流画廊",
+      featEdgeDesc: "按真实比例排布，支持分类切换、键盘浏览与沉浸式预览。",
+      featSecurityTitle: "可配置的访问策略",
+      featSecurityDesc: "Referer 与 CORS 白名单以运行时变量下发，不写进代码，也不随仓库发布。",
       featUaTitle: "UA 智能设备分流",
       featUaDesc: "单接口智能探测访问设备：移动端返回高清竖屏壁纸，PC 端返回横屏风景插画。",
     },
@@ -168,34 +142,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       loading: "加载中...",
     },
     settings: {
-      title: "API 调用指南 & 边缘配置",
-      subtitle: "包含即开即用 302 API、无感边缘直链与防冲突规则生成器",
-      baseDomain: "服务基准域名",
-      copy: "复制",
-      copied: "已复制",
-      all: "全部",
-      tabQuery: "即开即用 API",
-      tabDirect: "无感直链模式",
-      queryBanner: "【即开即用模式】：直接通过 Worker 进行 302 随机重定向，部署完成即 100% 全网可用，完美适配 Markdown、外链博客及各类前端调用。",
-      directBanner: "【极简无感直链说明】：此模式地址保持极简（如 /a），返回图片时浏览器 URL 始终无痕保持不变。由于在 Cloudflare 边缘重写并直接命中静态资产，完全不消耗 Worker 调用额度（真正 0 成本、无限调用）。",
-      cfGuideTitle: "Cloudflare 边缘防冲突重写规则参考与生成器",
-      cfGuideTag: "零消耗·无限流量",
-      cfGuideDesc: "针对当前站点所有分类一键生成规范表达式，解决多分类“打架”、误伤与 404 隐患",
-      cfExpand: "展开配置规则",
-      cfCollapse: "收起规则",
-      rule1Title: "1. 精准路径前缀隔离",
-      rule1Desc: "匹配条件采用 eq \"/cat\" or starts_with(\"/cat/\")，避免 /anime 被 /a 抢先误伤！",
-      rule2Title: "2. 杜绝末尾斜杠 404",
-      rule2Desc: "重写目标写死固定前缀 concat(\"/cat/\", ...)，避免末尾斜杠拼出双斜杠 404。",
-      rule3Title: "3. 严格对齐真实扩展名",
-      rule3Desc: "自动提取分类真实后缀（如头像为 .jpeg，GIF 为 .gif），严禁全写成 .jpg。",
-      currentRulesTitle: "当前站点分类规则（进入 Cloudflare 控制台 -> Rules -> Transform Rules -> URL Rewrite）：",
-      dynamicNote: "重写类型必须选择 Dynamic (动态)",
-      matchLabel: "1. 匹配条件 (When incoming requests match - Custom expression):",
-      rewriteLabel: "2. 重写路径至 (Path rewrite to - Dynamic):",
-      copyMatch: "复制条件",
-      copyRewrite: "复制表达式",
-      extSuffix: "产物后缀",
+      title: "API 调用指南",
+      subtitle: "302 随机重定向接口与直链路径的调用方式",
     },
     categories: {
       h: "横屏",
@@ -213,7 +161,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     nav: {
       home: "Home",
       gallery: "Gallery",
-      settings: "Config & API",
+      settings: "API",
       github: "GitHub Repository",
       primary: "Main navigation",
       switchTheme: "Toggle color theme",
@@ -248,10 +196,10 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       featuresSubtitle: "High-performance serverless design tuned for edge networks",
       featFreeTitle: "Static Hosting & Edge Delivery",
       featFreeDesc: "Deliver images through Cloudflare static assets. Worker-based direct-link protection executes a Worker and is subject to your deployment and plan limits.",
-      featEdgeTitle: "Seamless Edge Rewrite",
-      featEdgeDesc: "Clean and concise URLs (e.g. /h, /a) where browser address bar stays unchanged while streaming image data.",
-      featSecurityTitle: "Configurable Access Protection",
-      featSecurityDesc: "Configure Referer hosts, missing-referrer behavior, and CORS origins. The policy is embedded in generated Workers and takes effect after deployment.",
+      featEdgeTitle: "Adaptive Gallery",
+      featEdgeDesc: "Laid out at true aspect ratio, with category switching, keyboard browsing, and immersive preview.",
+      featSecurityTitle: "Configurable Access Policy",
+      featSecurityDesc: "Referer and CORS allowlists are supplied as runtime variables: never written into the code and never published with the repository.",
       featUaTitle: "Device-Aware Smart Routing",
       featUaDesc: "Intelligently delivers vertical wallpapers to mobile devices and horizontal scenery to desktops.",
     },
@@ -267,34 +215,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       loading: "Loading...",
     },
     settings: {
-      title: "API Guide & Edge Configuration",
-      subtitle: "Instant 302 API endpoints, edge seamless direct links, and anti-conflict rule generator",
-      baseDomain: "Base Service Domain",
-      copy: "Copy",
-      copied: "Copied!",
-      all: "All",
-      tabQuery: "Instant API",
-      tabDirect: "Direct Link Mode",
-      queryBanner: "[Instant API Mode]: Dispatches 302 redirects directly from Workers. Ready to use immediately across Markdown, blogs, and apps without extra Cloudflare setup.",
-      directBanner: "[Direct Link Mode]: Ultra-clean URLs (e.g. /a) where browser address bar stays seamless. Rewritten at Cloudflare edge to consume 0 Worker quota.",
-      cfGuideTitle: "Cloudflare Edge Anti-Conflict Rewrite Rule Generator",
-      cfGuideTag: "Zero Quota · Unlimited",
-      cfGuideDesc: "Standardized expressions for each category preventing rule collisions, prefix mis-matches, and 404 errors",
-      cfExpand: "Expand Config Rules",
-      cfCollapse: "Collapse Rules",
-      rule1Title: "1. Strict Path Prefix Isolation",
-      rule1Desc: "Uses eq \"/cat\" or starts_with(\"/cat/\") to prevent /anime from being hijacked by /a!",
-      rule2Title: "2. Prevent Trailing Slash 404",
-      rule2Desc: "Rewrites with fixed prefix concat(\"/cat/\", ...) to avoid double slash 404 errors.",
-      rule3Title: "3. Match Exact Output Extension",
-      rule3Desc: "Automatically matches actual category extension (.jpeg, .gif, .jpg) instead of hardcoding .jpg.",
-      currentRulesTitle: "Current Category Rules (In Cloudflare Dashboard -> Rules -> Transform Rules -> URL Rewrite):",
-      dynamicNote: "Rewrite type must be set to Dynamic",
-      matchLabel: "1. Match Condition (When incoming requests match - Custom expression):",
-      rewriteLabel: "2. Path Rewrite To (Dynamic):",
-      copyMatch: "Copy Condition",
-      copyRewrite: "Copy Expression",
-      extSuffix: "Output Ext",
+      title: "API Guide",
+      subtitle: "How to call the 302 redirect endpoints and the direct paths",
     },
     categories: {
       h: "Horizontal",

@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="CHANGELOG.zh.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
@@ -21,7 +22,7 @@
 * **格式自动适配**：`h/v` 统一规范为 `.jpg` 保证通用兼容性，其余分类自动嗅探并保留原图扩展名（如 `.gif`, `.jpeg`, `.png`）。
 * **自适应瀑布流画廊**：前端自动根据元数据适配分类数量与比例，支持中英双语切换、深浅主题与 Fancybox 交互预览。
 * **双模式调用**：支持通用 302 服务端重定向（API 模式）与 Cloudflare Transform Rules 边缘重写（无感模式）。
-* **内置安全边界**：支持 Referer 防盗链白名单机制（放行空 Referer）与动态 CORS 跨域控制。
+* **可配置访问策略**：Referer 与 CORS 白名单以运行时环境变量下发，不写进代码，也不提交到仓库。
 
 ---
 
@@ -41,14 +42,13 @@
 ├── app/                    # Next.js App Router
 │   ├── page.tsx            # 首页全景与实时体验
 │   ├── gallery/            # 独立瀑布流画廊页面
-│   ├── settings/           # API 调用与配置中心
+│   ├── settings/           # API 参考（接口与复制格式）
 │   ├── template.tsx        # 客户端路由切换进入过渡容器
 │   └── layout.tsx          # 根布局与元数据配置
 ├── components/             # React UI 组件
-│   ├── access-policy-panel.tsx # 防盗链与访问策略图形化配置面板
 │   ├── live-preview.tsx    # 实时原图自适应预览容器（零裁切）
 │   ├── image-gallery.tsx   # 核心瀑布流画廊组件
-│   └── api-panel.tsx       # API 快捷调用与规则参考面板
+│   └── api-panel.tsx       # 接口卡片与 URL / Markdown / HTML 复制
 ├── lib/                    # 共享模块与类型化国际化字典
 │   ├── i18n.tsx            # 国际化上下文与全局文案
 │   ├── api-translations.ts # API 指南双语翻译字典
@@ -58,9 +58,9 @@
 ├── tests/                  # 自动化回归测试套件
 │   ├── backend-contract.test.mjs   # Worker / Pages 安全与 HTTP 契约测试
 │   ├── static-export.test.mjs      # 静态导出片段路径回归测试
-│   └── test_access_policy.py       # 访问策略生成与校验单元测试
+│   └── test_access_policy.py       # 运行时策略环境变量与生成器检查
 ├── gen_img.py              # 构建脚本：素材扫描、哈希映射与元数据生成
-├── access-policy.json      # 构建期 Referer/CORS 与图片访问策略
+├── .dev.vars.example       # 本地 Worker 环境变量模板（访问策略）
 ├── index.js                # Cloudflare Workers 入口
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
 ├── README.md               # 英文说明文档
@@ -215,56 +215,23 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gi
 
 ---
 
-### 🛡️ 安全边界与防盗链
+### 🛡️ 访问策略
 
-“配置 & API”页面提供中英文策略编辑器、字段校验、JSON 预览与配置下载。表单编辑的是浏览器草稿，不会直接修改已部署服务。
-
-[access-policy.json](./access-policy.json) 是两个后端的统一构建配置。修改后需要重新生成、构建并部署；部署后只修改 JSON 不会生效。生成的 `index.js` 和 `functions/pic.js` 会内嵌配置，并明确注释匹配规则。
+白名单是运行时配置，不是构建输入。`index.js` 与 `functions/pic.js` 生成时不包含任何域名，
+请求到来时才从 Worker / Pages 的环境变量读取。因此仓库、构建产物与已部署的 bundle 里都不会
+出现你的域名。照常部署，然后写入变量即可——Cloudflare 加密保存，下一次请求立即生效，无需重建：
 
 ```bash
-python gen_img.py --access-policy ./access-policy.json --hash-length 2
+npx wrangler secret put REFERER_ALLOWED_HOSTS
 ```
 
-`--access-policy` 可选：默认读取当前目录的 `./access-policy.json`；若默认文件不存在则使用相同的通用默认值。显式指定文件不存在、JSON 无效、字段缺失/拼错、域名或 origin 格式错误时，会在修改图片产物前终止构建。没有写死任何项目域名或 localhost 例外。
+[`.dev.vars.example`](./.dev.vars.example) 记录了全部可用变量、列表与布尔的写法以及默认值，
+它同时也是 `wrangler dev` 本地读取的文件。站点本身不渲染任何策略内容：规则名、写法与默认值
+只存在于该文件和后端源码里。
 
-完整 v1 配置如下（所有字段必填，以下为默认值）：
-
-```json
-{
-  "version": 1,
-  "referer": {
-    "enabled": true,
-    "allowMissing": true,
-    "allowSameOrigin": true,
-    "allowedHosts": []
-  },
-  "cors": {
-    "allowSameOrigin": true,
-    "allowedOrigins": []
-  },
-  "protectAssetImages": true
-}
-```
-
-| 字段 | 含义 |
-| :--- | :--- |
-| `referer.enabled` | 是否启用 Referer 校验。关闭后仍检查 Origin。 |
-| `referer.allowMissing` | 是否允许缺失/空 Referer，方便直链、curl 与 Markdown；设为 false 则 GET/HEAD 必须携带 Referer。 |
-| `referer.allowSameOrigin` | 是否允许 Referer 与实际请求 URL 同源（协议、主机、端口一致）。 |
-| `referer.allowedHosts` | 不区分大小写的精确主机/IP 或 `*.example.com`；不包含协议、路径、端口。通配符匹配 `a.example.com`、`a.b.example.com`，不包含根域 `example.com`，也不匹配 `badexample.com`；根域需另加一项。精确主机不包含子域。国际化域名请用 ASCII/punycode。 |
-| `cors.allowSameOrigin` | 是否允许与实际请求 URL 同源的 Origin。 |
-| `cors.allowedOrigins` | 独立的精确 origin，例如 `["https://client.example", "http://localhost:3000"]`。包含协议与非默认端口，不允许路径、尾部斜杠、凭据、`null` 或通配符；协议/端口不同需分别配置。 |
-| `protectAssetImages` | 在 Worker 中对生成分类目录内的图片直链应用两项检查；不会生成 Pages 中间件。 |
-
-只要请求携带无效或未授权的 `Origin`，一律返回 **403**，包括 OPTIONS 以及 Referer 已获准/缺失的请求。未携带 Origin 时再按 Referer 策略判断；无效或未授权 Referer 同样返回 **403**。允许另一个网页应用时，按需分别配置 fetch/XHR 的 origin 与嵌入图片的 Referer 主机，两个白名单互不替代。
-
-受保护路由只支持 GET、HEAD、OPTIONS。OPTIONS 检查 Origin、请求方法与请求头名称，允许后返回 204；由于浏览器预检可能省略 Referer，预检不要求 Referer。其他方法返回 405。HEAD 在成功和错误时均只返回对应状态/头部，不含正文。跳转、受保护图片和错误响应均带 `Vary: Origin, Referer` 与 `Cache-Control: private, no-store`；预检还对请求方法和请求头名称分流，并保留图片已有的 Vary 值，避免不同调用者共用允许/拒绝响应。覆盖这些头部的“缓存所有内容”规则会破坏此边界。
-
-**部署边界**：
-
-* **Workers**：保护 `/pic` 与 `/api/pic`；`protectAssetImages: true` 时也保护 `/<生成分类>/<文件名>.jpg|jpeg|png|gif|webp`，包括跳转目标和解码后的路径。必须保留 `wrangler.jsonc` 的 `assets.run_worker_first: true`，否则 Cloudflare 默认先返回已匹配静态文件，完全绕过 Worker。HTML 页面、`counts.json`、JS/CSS、图标及非分类资源保持公开。所有请求会执行 Worker，影响请求计费/额度；通过检查后仍经 ASSETS binding 获取图片。
-* **Pages**：`functions/pic.js` 只保护 `/pic`；`/api/pic` 需另加 Pages function/重写，本仓库未生成这个别名。静态图片及 Transform Rules 重写可以绕过跳转函数；如需保护，使用 Pages 中间件或账户级 WAF/防盗链规则。仅启用 `protectAssetImages` 不能保护 Pages 静态文件。
-* **请求头检查不等于身份认证**：客户端可以省略或伪造请求头，允许空 Referer 就会按设计放行这类请求；即便禁止空 Referer，非浏览器客户端仍可伪造白名单值。敏感图片或更强防滥用需求应采用鉴权、签名 URL 或账户级策略。
+被策略拒绝的请求与不存在的图片返回完全相同的响应，配置错误只写日志、不回给调用方，
+因此无法用响应差异反推规则。请求头检查不等于身份认证：该边界以及 Workers / Pages 的差异见
+[SECURITY.zh.md](SECURITY.zh.md)。
 
 无需安装依赖或覆盖仓库图片池，即可运行后端契约测试：
 

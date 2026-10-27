@@ -18,8 +18,6 @@ import {
   Film,
   Zap,
   Info,
-  Layers,
-  ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
 
@@ -78,19 +76,11 @@ export function ApiPanel({ defaultOpen = false }: ApiPanelProps) {
   const { lang } = useI18n();
   const t = API_TRANSLATIONS[lang];
   const panelId = useId();
-  const guideId = useId();
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [isCfGuideOpen, setIsCfGuideOpen] = useState(false);
   const origin = useSyncExternalStore(
     () => () => {},
     () => (typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://img.srprolin.com"),
     () => "https://img.srprolin.com"
-  );
-
-  const hostname = useSyncExternalStore(
-    () => () => {},
-    () => (typeof window !== "undefined" && window.location.hostname ? window.location.hostname : "img.srprolin.com"),
-    () => "img.srprolin.com"
   );
 
   const [categoryExts, setCategoryExts] = useState<Record<string, string>>(BASE_DEFAULT_CATEGORIES);
@@ -260,7 +250,7 @@ export function ApiPanel({ defaultOpen = false }: ApiPanelProps) {
     });
   }
 
-  // 2. 极简无感直链 (需边缘重写)
+  // 2. 直链路径（需自行配置重写规则）
   keys.forEach((key) => {
     const label = getCategoryLabel(key);
     const icon = Zap;
@@ -618,152 +608,6 @@ export function ApiPanel({ defaultOpen = false }: ApiPanelProps) {
             })}
           </div>
 
-          {/* 专栏板块：Cloudflare 边缘重写配置指南与防冲突规则生成器 */}
-          <div className="mt-6 rounded-xl border border-border/80 bg-background/60 p-4 sm:p-5 space-y-4">
-            <h3>
-              <button
-                type="button"
-                aria-expanded={isCfGuideOpen}
-                aria-controls={guideId}
-                onClick={() => setIsCfGuideOpen((prev) => !prev)}
-                className="flex w-full flex-wrap items-center justify-between gap-3 text-left cursor-pointer group select-none rounded focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span className="shrink-0 p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                    <Layers className="w-4 h-4" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="text-sm font-semibold text-foreground flex flex-wrap items-center gap-2">
-                      {t.cfTitle}
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-normal">{t.cfTag}</span>
-                    </span>
-                    <span className="block text-xs font-normal text-muted-foreground">{t.cfDescription}</span>
-                  </span>
-                </span>
-                <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                  <span>{isCfGuideOpen ? t.cfCollapse : t.cfExpand}</span>
-                  {isCfGuideOpen ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
-                </span>
-              </button>
-            </h3>
-
-            <div
-              id={guideId}
-              aria-hidden={!isCfGuideOpen}
-              inert={!isCfGuideOpen}
-              className={`grid min-w-0 transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${isCfGuideOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-            >
-              <div className="min-h-0 min-w-0 overflow-hidden">
-              <div className="pt-3 border-t border-border/50 space-y-4 text-xs">
-                {/* 核心原理与防打架说明 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/40 border border-border/40 space-y-1">
-                    <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{t.rule1Title}</span>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
-                      {t.rule1Description}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-muted/40 border border-border/40 space-y-1">
-                    <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{t.rule2Title}</span>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
-                      {t.rule2Description}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-muted/40 border border-border/40 space-y-1">
-                    <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{t.rule3Title}</span>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
-                      {t.rule3Description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 各分类规则速查生成器 */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-foreground flex flex-wrap items-center justify-between gap-2">
-                    <span>{t.currentRulesTitle}</span>
-                    <span className="text-[11px] text-muted-foreground font-normal">{t.dynamicNote}</span>
-                  </h4>
-                  <p className="text-muted-foreground leading-relaxed">{t.ruleCaveat}</p>
-
-                  <div className="space-y-2.5">
-                    {keys.map((catKey) => {
-                      const ext = categoryExts[catKey];
-                      const label = getCategoryLabel(catKey);
-                      const matchExpr = `(http.host eq "${hostname}" and (http.request.uri.path eq "/${catKey}" or starts_with(http.request.uri.path, "/${catKey}/")) and not ends_with(http.request.uri.path, "${ext}"))`;
-                      const rewriteExpr = `concat("/${catKey}/", substring(uuidv4(cf.random_seed), 0, 2), "${ext}")`;
-
-                      const isMatchCopied = copiedKey === `cf-match-${catKey}`;
-                      const isRewriteCopied = copiedKey === `cf-rewrite-${catKey}`;
-
-                      return (
-                        <div
-                          key={`cf-rule-${catKey}`}
-                          className="p-3 rounded-lg bg-background border border-border/80 space-y-2"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="min-w-0 font-semibold text-foreground flex flex-wrap items-center gap-2">
-                              <span>{t.category}: {label} (<code className="font-mono break-all">/{catKey}</code>)</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
-                                {t.extSuffix}: {ext}
-                              </span>
-                            </span>
-                          </div>
-
-                          {/* 匹配表达式 */}
-                          <div className="space-y-1">
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                              <span>{t.matchLabel}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(matchExpr, `cf-match-${catKey}`)}
-                                className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer"
-                              >
-                                {isMatchCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                <span>{isMatchCopied ? t.copiedMatch : t.copyMatch}</span>
-                              </button>
-                            </div>
-                            <pre className="max-w-full p-2 rounded bg-muted/60 text-[11px] font-mono text-foreground whitespace-pre-wrap break-all select-all">
-                              <code>{matchExpr}</code>
-                            </pre>
-                          </div>
-
-                          {/* 路径重写表达式 */}
-                          <div className="space-y-1">
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                              <span>{t.rewriteLabel}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(rewriteExpr, `cf-rewrite-${catKey}`)}
-                                className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer"
-                              >
-                                {isRewriteCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                <span>{isRewriteCopied ? t.copiedRewrite : t.copyRewrite}</span>
-                              </button>
-                            </div>
-                            <pre className="max-w-full p-2 rounded bg-muted/60 text-[11px] font-mono text-foreground whitespace-pre-wrap break-all select-all">
-                              <code>{rewriteExpr}</code>
-                            </pre>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              </div>
-            </div>
-          </div>
         </div>
         </div>
       </div>

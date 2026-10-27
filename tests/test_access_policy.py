@@ -1,7 +1,12 @@
-"""Configuration/build checks; all generator output stays in temporary directories."""
+"""Generator-side checks for the runtime access policy.
 
-import copy
-import importlib.util
+The allowlist is no longer build-time data: it lives in Worker / Pages
+environment variables, so the only thing to assert here is that the generator
+never bakes a policy in and that both backends read the documented env names.
+Behavioural coverage lives in tests/backend-contract.test.mjs, which drives the
+generated handlers with real HTTP requests.
+"""
+
 import json
 from pathlib import Path
 import subprocess
@@ -10,90 +15,83 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('gen_img', ROOT / 'gen_img.py')
-gen = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = gen
-spec.loader.exec_module(gen)
+
+POLICY_ENV_NAMES = (
+    'REFERER_ENABLED',
+    'REFERER_ALLOW_MISSING',
+    'REFERER_ALLOW_SAME_ORIGIN',
+    'REFERER_ALLOWED_HOSTS',
+    'CORS_ALLOW_SAME_ORIGIN',
+    'CORS_ALLOWED_ORIGINS',
+    'PROTECT_ASSET_IMAGES',
+)
 
 
-class AccessPolicyTests(unittest.TestCase):
-    def test_checked_in_defaults_and_cli(self):
-        expected = gen.default_access_policy()
-        self.assertEqual(gen.load_access_policy(ROOT / 'access-policy.json'), expected)
-        self.assertEqual(gen.Config.from_args(['--access-policy', str(ROOT / 'access-policy.json')]).access_policy, expected)
+class RuntimePolicyTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = tempfile.TemporaryDirectory(prefix='srp-env-policy-')
+        directory = Path(cls.temporary.name)
+        for category in ('h', 'v', 'a', 'gif', 'custom', 'empty'):
+            (directory / 'oriImg' / category).mkdir(parents=True)
+            if category != 'empty':
+                (directory / 'oriImg' / category / 'source.gif').write_bytes(bytes.fromhex('47494638396101000100'))
+        result = subprocess.run(
+            [sys.executable, str(ROOT / 'gen_img.py'), '--hash-length', '1', '--no-copy'],
+            cwd=directory, capture_output=True, text=True,
+        )
+        cls.assert_generated = result
+        cls.directory = directory
 
-    def test_checked_in_backends_match_generator(self):
-        config = gen.Config(access_policy=gen.load_access_policy(ROOT / 'access-policy.json'))
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def test_generation_succeeds_without_any_policy_file(self):
+        self.assertEqual(self.assert_generated.returncode, 0, self.assert_generated.stderr)
+        self.assertFalse((self.directory / 'access-policy.json').exists())
+
+    def test_backends_read_every_documented_env_name(self):
+        for name in ('index.js', 'functions/pic.js'):
+            source = (self.directory / name).read_text(encoding='utf-8')
+            for env_name in POLICY_ENV_NAMES:
+                self.assertIn(env_name, source, f'{name} misses {env_name}')
+
+    def test_no_allowlist_is_embedded(self):
+        for name in ('index.js', 'functions/pic.js'):
+            source = (self.directory / name).read_text(encoding='utf-8')
+            self.assertNotIn('ACCESS_POLICY', source)
+            self.assertNotIn('allowedHosts: [', source)
+            self.assertNotIn('allowedOrigins: [', source)
+            self.assertNotIn('srprolin', source)
+
+    def test_pages_handler_reads_context_env(self):
+        source = (self.directory / 'functions' / 'pic.js').read_text(encoding='utf-8')
+        self.assertIn('handleRequest(context.request, context.env)', source)
+
+    def test_worker_handler_reads_env_binding(self):
+        source = (self.directory / 'index.js').read_text(encoding='utf-8')
+        self.assertIn('async fetch(request, env)', source)
+        self.assertIn('resolvePolicy(env)', source)
+
+    def test_checked_in_entry_points_match_generator(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('gen_img', ROOT / 'gen_img.py')
+        gen = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = gen
+        spec.loader.exec_module(gen)
         metadata = json.loads((ROOT / 'public/counts.json').read_text(encoding='utf-8'))
-        pages, worker = gen.WorkerGenerator(config).generate_worker_code(metadata)
+        pages, worker = gen.WorkerGenerator(gen.Config()).generate_worker_code(metadata)
         self.assertEqual((ROOT / 'functions/pic.js').read_text(encoding='utf-8'), pages)
         self.assertEqual((ROOT / 'index.js').read_text(encoding='utf-8'), worker)
 
-    def test_normalization_and_separate_lists(self):
-        policy = gen.default_access_policy()
-        policy['referer']['allowedHosts'] = ['EXAMPLE.com', '*.Trusted.Example', '0:0:0:0:0:0:0:1']
-        policy['cors']['allowedOrigins'] = ['https://CLIENT.example:443', 'http://localhost:4321', 'http://[::1]:80']
-        actual = gen.validate_access_policy(policy)
-        self.assertEqual(actual['referer']['allowedHosts'], ['example.com', '*.trusted.example', '::1'])
-        self.assertEqual(actual['cors']['allowedOrigins'], ['https://client.example', 'http://localhost:4321', 'http://[::1]'])
-        self.assertEqual(policy['referer']['allowedHosts'][0], 'EXAMPLE.com')
-
-    def test_rejects_invalid_policy(self):
-        invalid = []
-        for key, value in [('version', True), ('version', 2), ('protectAssetImages', 'false'), ('typo', True)]:
-            policy = gen.default_access_policy()
-            policy[key] = value
-            invalid.append(policy)
-        for name in ('enabled', 'allowMissing', 'allowSameOrigin'):
-            policy = gen.default_access_policy()
-            policy['referer'][name] = 1
-            invalid.append(policy)
-        for host in ['*', 'https://example.com', 'example.com:443', '*example.com', '*.127.0.0.1',
-                     'example.com.evil/', 'example..com', 'example.com.', '', None, ' example.com']:
-            policy = gen.default_access_policy()
-            policy['referer']['allowedHosts'] = [host]
-            invalid.append(policy)
-        for origin in ['null', '*', 'https://*.example.com', 'https://example.com/',
-                       'https://example.com/path', 'https://example.com?', 'https://example.com#',
-                       'https://user@example.com', 'https://example.com:65536', 'ftp://example.com',
-                       'https://example.com\\@evil.test', 'https://example.com:',
-                       'https://clie\tnt.example', None, ' https://example.com']:
-            policy = gen.default_access_policy()
-            policy['cors']['allowedOrigins'] = [origin]
-            invalid.append(policy)
-        for policy in invalid + [None, [], {'version': 1}]:
-            with self.subTest(policy=policy):
-                with self.assertRaises(ValueError):
-                    gen.validate_access_policy(policy)
-
-    def test_cli_errors_before_touching_output(self):
-        with tempfile.TemporaryDirectory(prefix='srp-policy-python-') as temporary:
-            directory = Path(temporary)
-            for name, content in [('bad.json', '{broken'), ('invalid.json', '{"version":2}')]:
-                (directory / name).write_text(content, encoding='utf-8')
-            for name in ('bad.json', 'invalid.json', 'missing.json'):
-                result = subprocess.run(
-                    [sys.executable, str(ROOT / 'gen_img.py'), '--access-policy', name],
-                    cwd=directory, capture_output=True, text=True,
-                )
-                self.assertEqual(result.returncode, 2, result.stderr)
-                self.assertIn('cannot load access policy', result.stderr)
-                self.assertFalse((directory / 'public').exists())
-            # Missing implicit configuration deliberately uses portable defaults.
-            result = subprocess.run([sys.executable, str(ROOT / 'gen_img.py')], cwd=directory, capture_output=True)
-            self.assertEqual(result.returncode, 0)
-
-    def test_generator_embeds_validated_config_and_json_data(self):
-        policy = gen.default_access_policy()
-        policy['referer']['allowedHosts'] = ['*.example.com']
-        worker = gen.WorkerGenerator(gen.Config(access_policy=copy.deepcopy(policy)))
-        pages, assets = worker.generate_worker_code({'counts': {"custom'category": 16}})
-        for code in (pages, assets):
-            self.assertIn('const ACCESS_POLICY = ' + json.dumps(policy, ensure_ascii=True, indent=2), code)
-            self.assertIn("custom'category", code)
-            self.assertIn('const TARGETS = JSON.parse(', code)
-            self.assertNotIn('srprolin', code)
-        self.assertIn('assets.run_worker_first = true', assets)
+    def test_cli_no_longer_accepts_a_policy_file(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / 'gen_img.py'), '--access-policy', 'x.json'],
+            cwd=self.directory, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('unrecognized arguments', result.stderr)
 
 
 if __name__ == '__main__':

@@ -3,9 +3,8 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ApiPanel } from "@/components/api-panel";
-import { AccessPolicyPanel } from "@/components/access-policy-panel";
 import { useI18n } from "@/lib/i18n";
-import { SlidersHorizontal, Shield, Sparkles } from "lucide-react";
+import { SlidersHorizontal, Sparkles } from "lucide-react";
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -29,32 +28,18 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <AccessPolicyPanel />
-
-        {/* 核心配置面板（默认展开） */}
+        {/* API 调用方式（默认展开） */}
         <ApiPanel defaultOpen={true} />
 
-        {/* 补充：安全防护与跨域规范卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xs space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-foreground text-sm">
-              <Shield className="w-4 h-4 text-emerald-500" />
-              <span>{t.home.featSecurityTitle}</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t.home.featSecurityDesc}
-            </p>
+        {/* 补充：UA 分流说明 */}
+        <div className="mt-6 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xs p-5 space-y-2">
+          <div className="flex items-center gap-2 font-semibold text-foreground text-sm">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span>{t.home.featUaTitle}</span>
           </div>
-
-          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-xs space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-foreground text-sm">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span>{t.home.featUaTitle}</span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t.home.featUaDesc}
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t.home.featUaDesc}
+          </p>
         </div>
       </main>
 

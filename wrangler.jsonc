@@ -8,8 +8,16 @@
   "assets": {
     "directory": "./out",
     "binding": "ASSETS",
+    // The access policy is read per request, so every path must reach the
+    // Worker; asset-first routing would serve existing files unguarded.
     "run_worker_first": true
   },
+  // No "vars" here on purpose: values in this file are committed in plaintext.
+  // Set the access policy with `wrangler secret put NAME` (or Dashboard ->
+  // Settings -> Variables) instead:
+  //   REFERER_ENABLED, REFERER_ALLOW_MISSING, REFERER_ALLOW_SAME_ORIGIN,
+  //   REFERER_ALLOWED_HOSTS, CORS_ALLOW_SAME_ORIGIN, CORS_ALLOWED_ORIGINS,
+  //   PROTECT_ASSET_IMAGES
   "routes": [
     {
       "pattern": "img.srprolin.com/*",

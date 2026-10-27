@@ -55,6 +55,12 @@ __pycache__/
 /.wrangler/
 .playwright-mcp/
 
+# Local Worker bindings for `wrangler dev`. Real allowlists live in Cloudflare
+# (secret put / dashboard), never in the repo; .dev.vars.example is the template.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
 # OS / editor junk
 .DS_Store
 Thumbs.db
