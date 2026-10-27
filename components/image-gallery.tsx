@@ -18,6 +18,8 @@ interface GalleryManifest {
   count: number;
   hashLength: number;
   fileExt: string;
+  /** width / height per generated slot, so boxes are reserved before load. */
+  slotRatios: number[];
 }
 
 interface CountsData {
@@ -26,7 +28,19 @@ interface CountsData {
   hash_length?: number;
   category_exts?: Record<string, string>;
   output_ext?: string;
+  category_aspects?: Record<string, string | null>;
+  slot_ratios?: Record<string, number[]>;
   categories?: { key: string; count?: number; ext?: string }[];
+}
+
+const DEFAULT_RATIO = 4 / 3;
+
+/** "4/3" -> 1.3333; anything malformed falls back to DEFAULT_RATIO. */
+function parseAspect(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const [w, h] = value.split("/").map(Number);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
+  return w / h;
 }
 
 type CopyResult = { id: number; status: "pending" | "success" | "error" } | null;
@@ -81,6 +95,7 @@ function GalleryImages({ folder }: { folder: string }) {
   const [retry, setRetry] = useState(0);
   const [visibleCount, setVisibleCount] = useState(IMAGES_PER_PAGE);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [imageLoaded, setImageLoaded] = useState<Set<number>>(new Set());
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [copyResult, setCopyResult] = useState<CopyResult>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,10 +121,22 @@ function GalleryImages({ folder }: { folder: string }) {
         }
         const hashLength = data.hash_length ?? 2;
         const fileExt = data.category_exts?.[folder] ?? category?.ext ?? data.output_ext ?? ".jpg";
+        const perSlot = data.slot_ratios?.[folder];
+        const slotRatios = Array.isArray(perSlot)
+          ? perSlot.map((ratio) => (typeof ratio === "number" && ratio > 0 && Number.isFinite(ratio) ? ratio : DEFAULT_RATIO))
+          : [];
+        const fallbackRatio = parseAspect(data.category_aspects?.[folder]) ?? DEFAULT_RATIO;
         if (!Number.isInteger(hashLength) || hashLength < 1 || hashLength > 32 || !/^\.[a-z0-9]+$/i.test(fileExt)) {
           throw new Error("Invalid gallery filename metadata");
         }
-        if (!controller.signal.aborted) setManifest({ count, hashLength, fileExt });
+        if (!controller.signal.aborted) {
+          setManifest({
+            count,
+            hashLength,
+            fileExt,
+            slotRatios: slotRatios.length > 0 ? slotRatios : new Array(count).fill(fallbackRatio),
+          });
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           console.warn("Failed to load gallery metadata:", error);
@@ -128,6 +155,8 @@ function GalleryImages({ folder }: { folder: string }) {
     (_, id) => ({
       id,
       url: `/${encodeURIComponent(folder)}/${id.toString(16).padStart(manifest.hashLength, "0")}${manifest.fileExt}`,
+      // Slot index is reused cyclically if metadata is shorter than the count.
+      ratio: manifest.slotRatios[id % manifest.slotRatios.length] ?? DEFAULT_RATIO,
     }),
   ) : [], [folder, manifest, visibleCount]);
   const hasMore = manifest !== null && visibleCount < manifest.count;
@@ -227,9 +256,15 @@ function GalleryImages({ folder }: { folder: string }) {
       <p className="sr-only" role="status" aria-live="polite">{copyAnnouncement}</p>
       <div className={`columns-1 min-[360px]:columns-2 md:columns-3 gap-3 sm:gap-4 ${folder === "gif" ? "lg:columns-5" : "lg:columns-4"}`}>
         {images.map((image) => (
-          <div key={image.id} className="group relative mb-3 sm:mb-4 break-inside-avoid overflow-hidden rounded-lg bg-muted">
+          <div
+            key={image.id}
+            // The box is reserved from the slot's real ratio, so nothing reflows
+            // when the bitmap arrives -- that reflow was the scroll flicker.
+            style={{ aspectRatio: String(image.ratio) }}
+            className="group relative mb-3 sm:mb-4 break-inside-avoid overflow-hidden rounded-lg bg-muted"
+          >
             {imageErrors.has(image.id) ? (
-              <div className="min-h-32 aspect-square flex items-center justify-center p-3 text-center">
+              <div className="flex h-full w-full items-center justify-center p-3 text-center">
                 <p className="text-xs text-muted-foreground">{messages.imageUnavailable(image.id)}</p>
               </div>
             ) : (
@@ -239,18 +274,25 @@ function GalleryImages({ folder }: { folder: string }) {
                   href={image.url}
                   data-caption={`#${image.id}`}
                   aria-label={messages.previewLabel(image.id)}
-                  className="block w-full cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  className="absolute inset-0 block cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                 >
+                  {/* Skeleton sits behind the bitmap and is painted over once it decodes. */}
+                  {!imageLoaded.has(image.id) && (
+                    <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-muted-foreground/10 motion-reduce:animate-none" />
+                  )}
                   <Image
                     src={image.url}
                     alt={messages.imageAlt(image.id)}
                     width={800}
                     height={800}
-                    className="block w-full h-auto object-contain"
+                    className={`h-full w-full object-contain transition-opacity duration-200 motion-reduce:transition-none ${
+                      imageLoaded.has(image.id) ? "opacity-100" : "opacity-0"
+                    }`}
                     sizes={folder === "gif"
                       ? "(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 20vw"
                       : "(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 25vw"}
                     loading={image.id < 8 ? "eager" : "lazy"}
+                    onLoad={() => setImageLoaded((previous) => previous.has(image.id) ? previous : new Set(previous).add(image.id))}
                     onError={() => setImageErrors((previous) => new Set(previous).add(image.id))}
                   />
                 </a>

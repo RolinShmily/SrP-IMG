@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg"></a>
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.1-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
@@ -63,6 +63,7 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 ├── .dev.vars.example       # Template for local Worker env bindings (policy)
 ├── index.js                # Cloudflare Workers entrypoint
 ├── wrangler.jsonc          # Cloudflare Workers configuration
+├── docs/screenshots/       # Screenshots used by the README preview section
 ├── README.md               # English documentation
 └── README_zh.md            # Chinese documentation
 ```
@@ -71,7 +72,18 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 
 ### 🖥️ Preview
 
-![preview](preview.webp)
+![SrP-IMG home page](./docs/screenshots/home.webp)
+
+<details>
+<summary>More screenshots — gallery, API reference, mobile</summary>
+
+![Waterfall gallery in dark mode](./docs/screenshots/gallery.webp)
+
+![API reference page](./docs/screenshots/api.webp)
+
+![Home page on mobile](./docs/screenshots/mobile.webp)
+
+</details>
 
 ---
 

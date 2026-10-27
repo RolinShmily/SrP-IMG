@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [0.2.1] - 2026-10-27
+
+### Changed
+
+* **Gallery reserves its geometry** — `counts.json` now ships a width/height ratio per
+  generated slot, so every tile is sized before its bitmap arrives. The masonry no longer
+  reflows while scrolling (the flicker), and a skeleton fills each reserved box until the
+  image decodes. Ratios come from the real source dimensions; `object-contain` keeps the
+  zero-crop guarantee.
+* **README preview gallery** — Screenshots are now captured from the live deployment
+  (`img.srprolin.com`) at 1200px wide: the home page shows by default and the gallery,
+  API reference, and mobile views sit behind a `<details>` block. Total size dropped from
+  393 KB (`preview.webp`) to 236 KB for four images.
+
 ## [0.2.0] - 2026-10-27
 
 ### Added
@@ -95,6 +109,7 @@ everything that shipped before the tag.
 * The 5MB per-file build limit prevents oversized assets from exhausting CI disk space
   during hash expansion. See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0

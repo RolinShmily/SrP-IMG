@@ -1,6 +1,6 @@
 {
   "name": "srp-img",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Unlimited-traffic, zero-cost random image API and waterfall gallery for Cloudflare Pages / Workers.",
   "keywords": [

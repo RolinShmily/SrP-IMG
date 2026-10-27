@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="CHANGELOG.zh.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg"></a>
+  <a href="CHANGELOG.zh.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.1-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
@@ -63,6 +63,7 @@
 ├── .dev.vars.example       # 本地 Worker 环境变量模板（访问策略）
 ├── index.js                # Cloudflare Workers 入口
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
+├── docs/screenshots/       # README 预览章节使用的截图
 ├── README.md               # 英文说明文档
 └── README_zh.md            # 中文说明文档
 ```
@@ -71,7 +72,18 @@
 
 ### 🖥️ 前端预览
 
-![preview](preview.webp)
+![SrP-IMG 首页](./docs/screenshots/home.webp)
+
+<details>
+<summary>更多截图 —— 画廊、API 参考、移动端</summary>
+
+![深色模式下的瀑布流画廊](./docs/screenshots/gallery.webp)
+
+![API 参考页](./docs/screenshots/api.webp)
+
+![移动端首页](./docs/screenshots/mobile.webp)
+
+</details>
 
 ---
 

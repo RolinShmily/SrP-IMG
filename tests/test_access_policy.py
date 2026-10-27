@@ -85,6 +85,17 @@ class RuntimePolicyTests(unittest.TestCase):
         self.assertEqual((ROOT / 'functions/pic.js').read_text(encoding='utf-8'), pages)
         self.assertEqual((ROOT / 'index.js').read_text(encoding='utf-8'), worker)
 
+    def test_metadata_reserves_slot_geometry(self):
+        """The gallery reserves each tile from these ratios; a gap would reintroduce reflow."""
+        meta = json.loads((self.directory / 'public' / 'counts.json').read_text(encoding='utf-8'))
+        self.assertIn('slot_ratios', meta)
+        for key, slots in meta['counts'].items():
+            ratios = meta['slot_ratios'][key]
+            self.assertEqual(len(ratios), slots, key)
+            for ratio in ratios:
+                self.assertIsInstance(ratio, (int, float))
+                self.assertGreater(ratio, 0, key)
+
     def test_cli_no_longer_accepts_a_policy_file(self):
         result = subprocess.run(
             [sys.executable, str(ROOT / 'gen_img.py'), '--access-policy', 'x.json'],

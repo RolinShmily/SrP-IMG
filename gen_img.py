@@ -221,6 +221,9 @@ class CategoryResult:
     name_en: str = ""
     aspect: Optional[str] = None
     aspect_hint: str = "自适应"
+    # One width/height ratio per generated slot, so the gallery can reserve the
+    # exact box before the image loads (no masonry reflow / flicker).
+    slot_ratios: List[float] = field(default_factory=list)
 
 
 class ImageProcessor:
@@ -291,6 +294,7 @@ class ImageProcessor:
                 name_en=LABEL_EN_MAP.get(category, category.capitalize()),
                 aspect=None,
                 aspect_hint="暂无素材",
+                slot_ratios=[],
             )
 
         # Auto-detect aspect ratio from the first valid image
@@ -317,9 +321,20 @@ class ImageProcessor:
         num_slots = self.config.num_slots
         print(f"  [{category}] {len(valid_images)} valid source images -> generating {num_slots} files")
 
+        # Dimensions are read once per source file; the slot loop only repeats them.
+        size_cache: Dict[Path, Tuple[Optional[int], Optional[int]]] = {}
+        slot_ratios: List[float] = []
         src_cycle = cycle(valid_images)
         for i in range(num_slots):
             src = next(src_cycle)
+            if src not in size_cache:
+                size_cache[src] = get_image_size(src)
+            src_w, src_h = size_cache[src]
+            if src_w and src_h:
+                slot_ratios.append(round(src_w / src_h, 4))
+            else:
+                # Unknown dimensions fall back to the detected category ratio.
+                slot_ratios.append(4 / 3)
             filename = f"{i:0{self.config.hash_length}x}{cat_ext}"
             dst = out_dir / filename
             if not self.config.no_copy:
@@ -344,6 +359,7 @@ class ImageProcessor:
             real_count=len(valid_images),
             ext=cat_ext,
             label=label,
+            slot_ratios=slot_ratios,
             description=desc,
             name_zh=name_zh,
             name_en=name_en,
@@ -382,6 +398,8 @@ class MetadataManager:
         category_exts = {r.name: r.ext for r in results}
         category_aspects = {r.name: r.aspect for r in results}
 
+        slot_ratios = {r.name: r.slot_ratios for r in results}
+
         categories_list = [
             {
                 "key": r.name,
@@ -406,6 +424,7 @@ class MetadataManager:
                     existing.get('counts') == counts and
                     existing.get('real_counts') == real_counts and
                     existing.get('category_exts') == category_exts and
+                    existing.get('slot_ratios') == slot_ratios and
                     existing.get('hash_length') == self.config.hash_length and
                     existing.get('output_ext') == self.config.default_ext
                 ):
@@ -422,6 +441,7 @@ class MetadataManager:
             "real_counts": real_counts,
             "category_exts": category_exts,
             "category_aspects": category_aspects,
+            "slot_ratios": slot_ratios,
             "hash_length": self.config.hash_length,
             "output_ext": self.config.default_ext,
             "generated_at": timestamp

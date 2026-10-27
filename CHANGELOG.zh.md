@@ -13,6 +13,17 @@
 
 暂无。
 
+## [0.2.1] - 2026-10-27
+
+### 变更
+
+* **画廊改为预留几何** —— `counts.json` 为每个生成槽位记录宽高比，图片到达前格子就已定尺寸。
+  瀑布流在滚动时不再重排（也就是闪烁的来源），加载期间每个格子显示骨架遮罩。比例取自真实素材
+  尺寸，配合 `object-contain` 保持零裁切。
+* **README 预览图集** —— 截图改为从线上部署（`img.srprolin.com`）直接抓取、宽度 1200px：
+  首页默认展示，画廊、API 参考与移动端放在 `<details>` 折叠块中。四张图合计 236 KB，
+  较原先单张 393 KB 的 `preview.webp` 更小。
+
 ## [0.2.0] - 2026-10-27
 
 ### 新增
@@ -87,6 +98,7 @@
 * 单文件 5MB 的构建限制可避免超大素材在哈希扩散阶段耗尽 CI 磁盘空间。
   漏洞报告方式见 [SECURITY.zh.md](SECURITY.zh.md)。
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0
