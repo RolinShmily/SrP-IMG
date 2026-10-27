@@ -15,7 +15,7 @@ against the latest `main` before reporting.
 **Do not open a public Issue for a security problem.** Report it privately by
 email:
 
-**<rol1n@srprolin.top>**
+**<contact@srprolin.com>**
 
 Include, as far as you can:
 

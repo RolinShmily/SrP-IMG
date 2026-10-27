@@ -62,4 +62,4 @@ npm run typecheck    # tsc --noEmit；构建本身会忽略类型错误
 ## 疑问
 
 可以开 [Issue](https://github.com/RolinShmily/SrP-IMG/issues)，或邮件至
-<rol1n@srprolin.top>。
+<contact@srprolin.com>。

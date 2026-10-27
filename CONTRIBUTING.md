@@ -70,4 +70,4 @@ Please do **not** open a public Issue for a vulnerability — follow
 ## Questions
 
 Open an [Issue](https://github.com/RolinShmily/SrP-IMG/issues) or email
-<rol1n@srprolin.top>.
+<contact@srprolin.com>.

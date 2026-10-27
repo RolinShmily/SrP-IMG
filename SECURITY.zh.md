@@ -13,7 +13,7 @@
 
 **请勿为安全问题提交公开 Issue。** 请通过邮件私下报告：
 
-**<rol1n@srprolin.top>**
+**<contact@srprolin.com>**
 
 请尽量附上：
 
