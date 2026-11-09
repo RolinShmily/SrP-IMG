@@ -2,13 +2,14 @@
   "name": "srp-img",
   "version": "0.2.1",
   "private": true,
+  "type": "module",
   "description": "Unlimited-traffic, zero-cost random image API and waterfall gallery for Cloudflare Pages / Workers.",
   "keywords": [
     "random-image-api",
     "image-api",
     "cloudflare-workers",
     "cloudflare-pages",
-    "nextjs",
+    "vite",
     "image-gallery",
     "masonry",
     "serverless"
@@ -27,37 +28,42 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "next build && node scripts/normalize-static-export.mjs",
+    "build": "vite build",
     "build:all": "npm run gen && npm run build",
     "deploy": "wrangler deploy",
-    "dev": "next dev",
-    "gen": "python gen_img.py --hash-length 2",
+    "dev": "vite",
+    "gen": "python -m pipeline --hash-length 2",
     "lint": "eslint .",
-    "start": "next start",
+    "preview": "vite preview",
+    "start": "vite preview",
+    "test": "python tests/pipeline/test_pipeline.py && python tests/test_access_policy.py && node --test tests/backend-contract.test.mjs tests/worker/source-equivalence.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fancyapps/ui": "^6.1.7",
-    "@vercel/analytics": "1.3.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
-    "next": "16.0.10",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-router": "^7.18.5",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.9",
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/vite": "^4.1.9",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^9.39.4",
-    "eslint-config-next": "16.0.10",
-    "postcss": "^8.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^7.3.7",
     "wrangler": "^4.54.0"
   }
 }

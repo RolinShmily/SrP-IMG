@@ -1,7 +1,5 @@
-"use client";
-
 import React, { createContext, useContext, useEffect, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router";
 
 export type Language = "zh" | "en";
 
@@ -92,7 +90,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   zh: {
     meta: {
       title: "SrP-IMG — 随机图片 API 与画廊",
-      description: "基于 Cloudflare Workers 与 Next.js 的多分类随机图片服务，支持可配置访问策略与自适应画廊。",
+      description: "基于 Cloudflare Workers 与 Vite + React 的多分类随机图片服务，支持可配置访问策略与自适应画廊。",
     },
     nav: {
       home: "首页",
@@ -109,7 +107,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     home: {
       badge: "开源 · 多分类 · 可配置的随机图片服务",
       heroTitle: "SrP-IMG 全能随机图库",
-      heroSubtitle: "基于 Cloudflare Workers 与 Next.js 构建的多分类随机图片 API，配备访问策略配置与自适应画廊。",
+      heroSubtitle: "基于 Cloudflare Workers 与 Vite + React 构建的多分类随机图片 API，配备访问策略配置与自适应画廊。",
       exploreBtn: "进入画廊",
       settingsBtn: "API 与配置",
       liveDemoTitle: "在线实时体验",
@@ -144,7 +142,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       subtitle: "动态加载、沉浸预览与多比例自适应",
       countSuffix: "张素材",
       emptyTitle: "该分类暂无有效图片素材",
-      emptyDesc: "请在 oriImg 目录中放置单张体积 ≤ 5MB 的图片后重新构建。",
+      emptyDesc: "请在 assets/original 目录中放置单张体积 ≤ 5MB 的图片后重新构建。",
       copySuccess: "已复制",
       copyDirect: "复制直链",
       loadedAll: "已加载全部图片",
@@ -162,7 +160,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       other: "分类",
     },
     footer: {
-      description: "基于 Cloudflare 与 Next.js 的多分类随机图片服务。配置清晰，选择自由。",
+      description: "基于 Cloudflare 与 Vite + React 的多分类随机图片服务。配置清晰，选择自由。",
       project: "项目源码",
       docs: "使用说明",
       releases: "发布记录",
@@ -174,7 +172,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   en: {
     meta: {
       title: "SrP-IMG — Random Image API & Gallery",
-      description: "A multi-category random image service with configurable access policies and an adaptive gallery, built on Cloudflare Workers and Next.js.",
+      description: "A multi-category random image service with configurable access policies and an adaptive gallery, built on Cloudflare Workers and Vite + React.",
     },
     nav: {
       home: "Home",
@@ -191,7 +189,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     home: {
       badge: "Open Source · Multiple Categories · Configurable Access",
       heroTitle: "SrP-IMG Random Image API",
-      heroSubtitle: "A multi-category random image API with configurable access policies and an adaptive gallery, built on Cloudflare Workers & Next.js.",
+      heroSubtitle: "A multi-category random image API with configurable access policies and an adaptive gallery, built on Cloudflare Workers & Vite + React.",
       exploreBtn: "Explore Gallery",
       settingsBtn: "API & Config",
       liveDemoTitle: "Live Interactive Preview",
@@ -226,7 +224,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       subtitle: "Dynamic loading, immersive modal preview & adaptive aspect ratios",
       countSuffix: "images",
       emptyTitle: "No valid images in this category",
-      emptyDesc: "Please place images <= 5MB in the oriImg directory and run build.",
+      emptyDesc: "Please place images <= 5MB in the assets/original directory and run build.",
       copySuccess: "Copied!",
       copyDirect: "Copy Link",
       loadedAll: "All images loaded",
@@ -244,7 +242,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       other: "Category",
     },
     footer: {
-      description: "A multi-category random image service built on Cloudflare & Next.js. Clear configuration, total freedom.",
+      description: "A multi-category random image service built on Cloudflare & Vite + React. Clear configuration, total freedom.",
       project: "Source Code",
       docs: "Documentation",
       releases: "Releases",
@@ -294,7 +292,7 @@ let sessionLanguage: Language | null = null;
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const lang = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const messages = TRANSLATIONS[lang];

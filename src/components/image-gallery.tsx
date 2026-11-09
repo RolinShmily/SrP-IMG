@@ -1,7 +1,4 @@
-"use client"
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import Image from "next/image"
 import { Copy, Check, ArrowUp } from "lucide-react"
 import { Fancybox, type FancyboxOptions, type FancyboxInstance } from "@fancyapps/ui"
 import { zh_CN } from "@fancyapps/ui/dist/fancybox/l10n/zh_CN.js"
@@ -280,7 +277,7 @@ function GalleryImages({ folder }: { folder: string }) {
                   {!imageLoaded.has(image.id) && (
                     <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-muted-foreground/10 motion-reduce:animate-none" />
                   )}
-                  <Image
+                  <img
                     src={image.url}
                     alt={messages.imageAlt(image.id)}
                     width={800}
@@ -288,9 +285,6 @@ function GalleryImages({ folder }: { folder: string }) {
                     className={`h-full w-full object-contain transition-opacity duration-200 motion-reduce:transition-none ${
                       imageLoaded.has(image.id) ? "opacity-100" : "opacity-0"
                     }`}
-                    sizes={folder === "gif"
-                      ? "(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 20vw"
-                      : "(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 25vw"}
                     loading={image.id < 8 ? "eager" : "lazy"}
                     onLoad={() => setImageLoaded((previous) => previous.has(image.id) ? previous : new Set(previous).add(image.id))}
                     onError={() => setImageErrors((previous) => new Set(previous).add(image.id))}

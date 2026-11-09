@@ -1,16 +1,11 @@
-"use client";
-
 import { useState, useEffect, useRef } from "react";
-import Link, { useLinkStatus } from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router";
 import { ModeToggle } from "@/components/mode-toggle";
 import { LangToggle } from "@/components/lang-toggle";
 import { useI18n } from "@/lib/i18n";
 import {
   Github,
   Image as ImageIcon,
-  LoaderCircle,
   Menu,
   SlidersHorizontal,
   Sparkles,
@@ -24,22 +19,16 @@ const MORPH_AT = 20;
 const HIDE_AFTER = 350;
 
 function NavLabel({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
-  const { pending } = useLinkStatus();
   return (
     <>
-      {pending ? (
-        <LoaderCircle className="size-3.5 animate-spin sm:size-4" aria-hidden="true" />
-      ) : (
-        <Icon className="size-3.5 sm:size-4" aria-hidden="true" />
-      )}
+      <Icon className="size-3.5 sm:size-4" aria-hidden="true" />
       <span>{label}</span>
-      <span className={`nav-pending ${pending ? "opacity-100" : "opacity-0"}`} aria-hidden="true" />
     </>
   );
 }
 
 export function Navbar() {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -112,16 +101,17 @@ export function Navbar() {
         <div className="site-header-capsule pointer-events-auto relative flex h-14 items-center justify-between rounded-xl sm:rounded-2xl border border-transparent px-2.5 sm:px-4">
           {/* Brand: Logo & Title */}
           <Link
-            href="/"
+            to="/"
             className="site-brand site-header-brand flex shrink-0 select-none items-center gap-2.5 rounded-lg py-1 transition-colors"
           >
-            <Image
+            <img
               src="/icon.svg"
               alt=""
               width={36}
               height={36}
               className="size-8 sm:size-9"
-              priority
+              loading="eager"
+              fetchPriority="high"
             />
             <span className="text-base sm:text-lg font-semibold tracking-tight">SrP-IMG</span>
           </Link>
@@ -133,7 +123,7 @@ export function Navbar() {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  to={link.href}
                   aria-current={active ? "page" : undefined}
                   className={`relative inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors ${
                     active
@@ -201,7 +191,7 @@ export function Navbar() {
                 return (
                   <Link
                     key={link.href}
-                    href={link.href}
+                    to={link.href}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${

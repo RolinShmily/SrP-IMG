@@ -1,51 +1,38 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { readFile, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import http from 'node:http';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { after, before, test } from 'node:test';
+import { SLOT_FORMATS } from '../worker/slot_formats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directories = [];
 const servers = [];
-let code = {};
 let modules = {};
 
-async function importCode(source) {
-  return import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
-}
-
-// The allowlist is runtime configuration now, so every case shares one build
-// and differs only in the env object handed to the handler.
+// The runtime is checked-in source now, so the tests import it directly instead
+// of spawning the Python generator for a throwaway build.
 before(async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'srp-env-policy-'));
-  directories.push(directory);
-  for (const category of ['h', 'v', 'a', 'gif', 'custom', 'empty']) {
-    const source = path.join(directory, 'oriImg', category);
-    await mkdir(source, { recursive: true });
-    if (category !== 'empty') {
-      await writeFile(path.join(source, 'source.gif'), Buffer.from('47494638396101000100', 'hex'));
-    }
-  }
-  const generated = spawnSync(
-    process.env.PYTHON || 'python',
-    [path.join(root, 'gen_img.py'), '--hash-length', '1', '--no-copy'],
-    { cwd: directory, encoding: 'utf8' },
-  );
-  assert.equal(generated.status, 0, generated.stderr || generated.stdout);
-  code = {
-    worker: await readFile(path.join(directory, 'index.js'), 'utf8'),
-    pages: await readFile(path.join(directory, 'functions', 'pic.js'), 'utf8'),
-  };
-  // No deployment-specific value may be baked into the shipped bundle.
-  for (const source of Object.values(code)) {
+  const [worker, pages, targets] = await Promise.all([
+    import(pathToFileURL(path.join(root, 'worker', 'index.js')).href),
+    import(pathToFileURL(path.join(root, 'functions', 'pic.js')).href),
+    import(pathToFileURL(path.join(root, 'worker', 'targets.js')).href),
+  ]);
+  modules = { worker, pages };
+  // Fixture-only categories: the committed manifest ships the four built-ins,
+  // while these assertions also cover a custom category and a zero-slot one.
+  targets.TARGETS.custom = { dir: 'custom', slots: 16, ext: '.gif', label: 'custom' };
+  targets.TARGETS.empty = { dir: 'empty', slots: 0, ext: '.jpg', label: 'empty' };
+
+  // No deployment-specific value may be baked into the shipped runtime.
+  const sources = await Promise.all([
+    'worker/index.js', 'worker/policy.js', 'worker/pages.js', 'functions/pic.js',
+  ].map(name => readFile(path.join(root, name), 'utf8')));
+  for (const source of sources) {
     assert.equal(source.includes('ACCESS_POLICY'), false);
     assert.equal(source.includes('srprolin'), false);
-    assert.ok(source.includes('REFERER_ALLOWED_HOSTS'));
   }
-  modules = { worker: await importCode(code.worker), pages: await importCode(code.pages) };
+  assert.ok(sources[1].includes('REFERER_ALLOWED_HOSTS'));
 });
 
 after(async () => {
@@ -53,7 +40,6 @@ after(async () => {
     server.close(resolve);
     server.closeAllConnections();
   })));
-  await Promise.all(directories.map(directory => rm(directory, { recursive: true, force: true })));
 });
 
 function handlerFor(mode, impl) {
@@ -62,7 +48,7 @@ function handlerFor(mode, impl) {
     : request => impl.default.fetch(request, request.__env);
 }
 
-async function start(mode, env, { failingAssets = false, impl = null } = {}) {
+async function start(mode, env, { failingAssets = false } = {}) {
   let assetCalls = 0;
   const bindings = {
     ...env,
@@ -85,7 +71,7 @@ async function start(mode, env, { failingAssets = false, impl = null } = {}) {
       },
     },
   };
-  const handle = handlerFor(mode, impl || modules[mode]);
+  const handle = handlerFor(mode, modules[mode]);
   const server = http.createServer(async (incoming, outgoing) => {
     try {
       const request = new Request('http://' + incoming.headers.host + incoming.url, {
@@ -245,12 +231,16 @@ for (const mode of ['worker', 'pages']) {
     assert.equal(await deniedHead.text(), '');
 
     // A runtime failure must still produce the policy headers, not a bare 599.
-    const broken = await importCode(code[mode].replace(
-      'const slot = Math.floor(Math.random() * target.slots);',
-      "throw new Error('fixture redirect failure');",
-    ));
-    const failure = await start(mode, TRUSTED_ENV, { impl: broken });
-    const response = await failure.request('/pic?img=h', { Origin: 'https://client.example' });
+    const failure = await start(mode, TRUSTED_ENV);
+    const random = context.mock.method(Math, 'random', () => {
+      throw new Error('fixture redirect failure');
+    });
+    let response;
+    try {
+      response = await failure.request('/pic?img=h', { Origin: 'https://client.example' });
+    } finally {
+      random.mock.restore();
+    }
     assert.equal(response.status, 500);
     checkPolicyHeaders(response, 'https://client.example');
     assert.ok(errors.mock.callCount() >= 1);
@@ -311,6 +301,59 @@ test('policy denials are indistinguishable from a missing image', async () => {
   for (const response of [deniedReferer, deniedOrigin]) {
     assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8');
   }
+});
+
+test('Worker: Content-Type describes the real slot bytes in both policy modes', async () => {
+  const MIME = { j: 'image/jpeg', p: 'image/png', g: 'image/gif', w: 'image/webp' };
+  const categoryExt = { a: '.jpeg', gif: '.gif', h: '.jpg', v: '.jpg' };
+  const hex = slot => slot.toString(16).padStart(2, '0');
+  // Slots whose bytes agree / disagree with the committed suffix, from the
+  // generated table itself, so the test tracks the pool instead of a snapshot.
+  const drift = Object.entries(SLOT_FORMATS).map(([category, codes]) => {
+    const expected = MIME[categoryExt[category] === '.jpeg' ? 'j' : categoryExt[category].slice(1)];
+    const match = [...codes].findIndex(code => MIME[code] === expected);
+    const mismatch = [...codes].findIndex(code => code !== '?' && MIME[code] !== expected);
+    return { category, match, mismatch, ext: categoryExt[category] };
+  });
+  const mismatched = drift.find(entry => entry.mismatch >= 0);
+  assert.ok(mismatched, 'the pool must contain at least one suffix/byte mismatch');
+
+  const api = await start('worker', TRUSTED_ENV);
+  const mismatchPath = '/' + mismatched.category + '/' + hex(mismatched.mismatch) + mismatched.ext;
+  const mismatchCode = SLOT_FORMATS[mismatched.category][mismatched.mismatch];
+  let response = await api.request(mismatchPath, { Origin: 'https://client.example' });
+  assert.equal(response.status, 200, mismatchPath);
+  assert.equal(response.headers.get('content-type'), MIME[mismatchCode], mismatchPath);
+  checkPolicyHeaders(response, 'https://client.example');
+  // HEAD keeps the corrected header with an empty body.
+  const head = await api.request(mismatchPath, { Origin: 'https://client.example' }, 'HEAD');
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('content-type'), MIME[mismatchCode]);
+  assert.equal(await head.text(), '');
+
+  const matched = drift.find(entry => entry.match >= 0);
+  const matchPath = '/' + matched.category + '/' + hex(matched.match) + matched.ext;
+  response = await api.request(matchPath, { Origin: 'https://client.example' });
+  assert.equal(response.headers.get('content-type'), MIME[SLOT_FORMATS[matched.category][matched.match]]);
+
+  // A denial is answered before the asset, so it never claims an image type.
+  const denied = await api.request(mismatchPath, { Referer: 'https://outside.example/' });
+  assert.equal(denied.status, 404);
+  assert.equal(denied.headers.get('content-type'), 'text/plain; charset=utf-8');
+
+  // With protection off the cache policy comes from the asset binding, but the
+  // Content-Type is still corrected.
+  const unprotected = await start('worker', { ...TRUSTED_ENV, PROTECT_ASSET_IMAGES: '0' });
+  response = await unprotected.request(mismatchPath, { Referer: 'https://outside.example/' });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), MIME[mismatchCode]);
+  assert.match(response.headers.get('cache-control'), /public/);
+
+  // Non-slot names in a category directory are still gated but not rewritten,
+  // so the asset binding's own 404 header survives.
+  response = await api.request('/h/missing.jpg', { Origin: 'https://client.example' });
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get('content-type'), /^text\/plain/);
 });
 
 test('Worker deployment runs script before static assets', async () => {

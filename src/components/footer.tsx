@@ -1,8 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router";
 import {
   ArrowUp,
   ArrowUpRight,
@@ -22,7 +18,7 @@ const LICENSE = `${REPOSITORY}/blob/main/LICENSE`;
 
 export function Footer() {
   const { t } = useI18n();
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   const links = [
     { label: t.footer.project, url: REPOSITORY, icon: GitFork },
@@ -49,11 +45,11 @@ export function Footer() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <Link
-              href="/"
+              to="/"
               onClick={handleBrandClick}
               className="inline-flex items-center gap-2 select-none font-semibold text-sm text-foreground hover:opacity-80 transition-opacity"
             >
-              <Image
+              <img
                 src="/icon.svg"
                 alt="SrP-IMG Logo"
                 width={22}

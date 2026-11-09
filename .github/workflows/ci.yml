@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build static export
+    name: Build frontend
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -41,21 +41,29 @@ jobs:
         run: npm run lint
 
       # --no-copy writes placeholder files instead of duplicating every image,
-      # which keeps the job fast; the metadata and Worker entry points are
+      # which keeps the job fast; the metadata and Worker data module are
       # generated exactly as they would be for a real deploy.
       - name: Generate hashed image sets
-        run: python gen_img.py --no-copy --hash-length 2
+        run: python -m pipeline --no-copy --hash-length 2
 
-      # gen_img.py rewrites these two files, and CONTRIBUTING asks contributors
-      # to commit the result. Failing here catches a stale committed artifact.
-      - name: Verify generated entry points are in sync
-        run: git diff --exit-code -- functions/pic.js index.js
+      # The pipeline rewrites worker/targets.js, worker/slot_formats.js and
+      # assets/generated/counts.json, and CONTRIBUTING asks contributors to commit
+      # them. Failing here catches a stale artifact (the image pool itself is
+      # git-ignored). slot_formats.js is derived from source headers only, so
+      # --no-copy produces the same bytes as a full run.
+      - name: Verify generated data is in sync
+        run: git diff --exit-code -- worker/targets.js worker/slot_formats.js assets/generated/counts.json
 
-      - name: Build static export
+      - name: Build frontend
         run: npm run build
 
-      # next.config.mjs sets typescript.ignoreBuildErrors, so type errors do not
-      # fail the build above — this step is the actual gate. It runs after the
-      # build because next build generates the gitignored next-env.d.ts.
+      # Deterministic suites only. The differential "old bundle vs new bundle"
+      # matrix self-skips once `git show HEAD:index.js` disappears, so it is safe
+      # to run here as the legacy entry point is retired.
+      - name: Run tests
+        run: npm test
+
+      # vite build transpiles without typechecking, so type errors do not fail
+      # the build above — this step is the actual gate.
       - name: Typecheck
         run: npm run typecheck

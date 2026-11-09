@@ -1,7 +1,5 @@
-"use client";
-
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ImageGallery } from "@/components/image-gallery";
@@ -39,19 +37,21 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
 ];
 
 function GalleryContent() {
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const galleryType = searchParams.get("cat") || "h";
   const { lang, t } = useI18n();
   const messages = GALLERY_MESSAGES[lang];
 
   const selectCategory = (key: string) => {
-    // Read the live URL so rapid clicks retain the latest query parameters.
-    // Next's native History integration updates useSearchParams and handles
-    // back/forward without a second, competing selected-category state.
-    const url = new URL(window.location.href);
-    if ((url.searchParams.get("cat") || "h") === key) return;
-    url.searchParams.set("cat", key);
-    window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    // setSearchParams keeps React Router's location in sync and pushes a
+    // history entry, so browser back/forward walks the category history.
+    // Clicking the active tab must not add a duplicate history entry.
+    if (galleryType === key) return;
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("cat", key);
+      return next;
+    });
   };
   const [categories, setCategories] = useState<CategoryItem[]>(DEFAULT_CATEGORIES);
 
@@ -172,20 +172,13 @@ function GalleryContent() {
   );
 }
 
-function GalleryLoading() {
-  const { t } = useI18n();
-  return <div className="py-12 text-center text-muted-foreground" role="status">{t.gallery.loading}</div>;
-}
-
 export default function GalleryPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />
 
       <main id="main-content" className="container mx-auto min-w-0 px-4 py-8 max-w-7xl flex-1">
-        <Suspense fallback={<GalleryLoading />}>
-          <GalleryContent />
-        </Suspense>
+        <GalleryContent />
       </main>
 
       <Footer />

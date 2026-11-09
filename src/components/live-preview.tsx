@@ -1,7 +1,4 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Check, Copy, ImageOff, LoaderCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -47,15 +44,12 @@ function PreviewImage({ src, label, onStatus }: {
 
   return (
     <>
-      <Image
+      <img
         src={src}
         alt={`${t.home.previewAlt} · ${label}`}
-        fill
-        sizes="(max-width: 896px) 100vw, 832px"
-        className={`object-contain p-3 sm:p-5 transition-opacity duration-150 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 h-full w-full object-contain p-3 sm:p-5 transition-opacity duration-150 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
         onLoad={() => finish("loaded")}
         onError={() => finish("error")}
-        unoptimized
       />
       {status !== "loaded" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground p-6 text-center" role="status">

@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "react-router";
 import { LivePreview } from "@/components/live-preview";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -147,7 +145,7 @@ export default function HomePage() {
             {/* 核心行动按钮 */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Link
-                href="/gallery"
+                to="/gallery"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm shadow-sm hover:shadow-md hover:bg-primary/85 transition-[background-color,box-shadow] duration-150"
               >
                 <ImageIcon className="w-4 h-4" />
@@ -156,7 +154,7 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href="/settings"
+                to="/settings"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-medium text-sm border border-border/80 shadow-2xs transition-all duration-200"
               >
                 <span>{t.home.settingsBtn}</span>
@@ -195,7 +193,7 @@ export default function HomePage() {
               </div>
 
               <Link
-                href="/gallery"
+                to="/gallery"
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-primary font-medium hover:underline"
               >
                 <span>{t.home.exploreBtn}</span>
@@ -210,7 +208,7 @@ export default function HomePage() {
                 return (
                   <Link
                     key={c.key}
-                    href={`/gallery?cat=${c.key}`}
+                    to={`/gallery?cat=${c.key}`}
                     className="p-5 rounded-2xl border border-border bg-card hover:bg-muted/40 transition-all duration-200 group flex flex-col justify-between gap-4 shadow-2xs hover:shadow-xs hover:border-primary/40"
                   >
                     <div className="space-y-2">

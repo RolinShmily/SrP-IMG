@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback, useRef, useSyncExternalStore, useId } from "react";
 import { useI18n } from "@/lib/i18n";
 import { API_TRANSLATIONS } from "@/lib/api-translations";

@@ -17,9 +17,10 @@ Closes #
 
 - [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md).
 - [ ] `npm run build` succeeds locally.
-- [ ] If I changed `gen_img.py`, I committed the regenerated `functions/pic.js` and `index.js`.
+- [ ] If I changed `worker/` or `pipeline/`, I committed the regenerated `worker/targets.js`,
+      `worker/slot_formats.js` and `assets/generated/counts.json` (CI diffs all three).
 - [ ] If user-facing behaviour changed, I updated **both** `README.md` and `README_zh.md`.
-- [ ] If I added a category or images, they live under `oriImg/<category>/`, are compressed below 2MB, and I have the right to distribute them.
+- [ ] If I added a category or images, they live under `assets/original/<category>/`, are compressed below 2MB, and I have the right to distribute them.
 - [ ] No secrets, tokens or credentials are included; deployment values stay in repository secrets.
 - [ ] `package-lock.json` is in sync with `package.json`, and any new dependency is explained above.
 
