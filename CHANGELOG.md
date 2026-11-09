@@ -98,6 +98,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   switchers are gone, and every reference (including the Chinese README) points
   at the English files.
 
+* **Edge-rewrite docs corrected** — `matches` requires Business / WAF Advanced,
+  so the documented rules now use `eq` (available on every plan). Added the
+  failure mode that took the site down: a `starts_with("/a")` rule also rewrites
+  `/assets/…`, blanking the SPA. `/assets/*` lost its `immutable` cache rule so a
+  transient 404 can no longer be pinned for a year.
+
 ## [0.2.1] - 2026-10-27
 
 ### Changed

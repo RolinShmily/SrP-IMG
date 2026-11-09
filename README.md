@@ -229,19 +229,20 @@ with no redirect. They coexist with the Worker API (`/pic?img=…`) and with the
 gallery's direct slot links — all three entry points end at the same asset, with
 the same access policy and the same corrected `Content-Type`.
 
-Create one **Rewrite URL** rule per category (*replace `<your-domain>`*). The
-match must be an **exact path shape**: `starts_with` also matches `/assets/…`,
-and an extension-based guard locks the zone to a single suffix. Both pitfalls are
+Create one **Rewrite URL** rule per category (*replace `<your-domain>`*). The match must be an **exact path**: `eq` works on every plan, while `matches`
+requires Business / WAF Advanced, `starts_with` also matches `/assets/…`, and an
+extension-based guard locks the zone to a single suffix. Both pitfalls are
 explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md).
 
 | Category | Match expression | Rewrite path (dynamic) |
 | :--- | :--- | :--- |
-| `h` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/h/?$")` | `concat("/h/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
-| `v` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/v/?$")` | `concat("/v/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
-| `a` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/a/?$")` | `concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")` |
-| `gif` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/gif/?$")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
+| `h` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/h")` | `concat("/h/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
+| `v` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/v")` | `concat("/v/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
+| `a` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/a")` | `concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")` |
+| `gif` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
 > **Notes**
+> * `matches` needs a Business / WAF Advanced plan; the examples use `eq`, which works on every plan. Never use `starts_with("/a")` — it also matches `/assets/…` and blanks the site.
 > * The suffix in each rewrite expression must equal that category's `ext_policy` in `assets/catalog.json`.
 > * The substring length must equal `--hash-length` (`2` → `0, 2`, i.e. 256 slots).
 > * `assets.run_worker_first: true` must stay enabled — the rewritten request still goes through the Worker, which applies the access policy and corrects `Content-Type`.

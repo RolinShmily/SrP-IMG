@@ -20,7 +20,7 @@ SrP-IMG 有意保留**三种入口**指向同一份图片池，并且三者并�
 
 ```text
 # 匹配
-(http.host eq "<your-domain>" and http.request.uri.path matches "^/h/?$")
+(http.host eq "<your-domain>" and http.request.uri.path eq "/h")
 
 # 路径重写（Dynamic）
 concat("/h/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
@@ -30,7 +30,7 @@ concat("/h/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 
 ```text
 # 匹配
-(http.host eq "<your-domain>" and http.request.uri.path matches "^/v/?$")
+(http.host eq "<your-domain>" and http.request.uri.path eq "/v")
 
 # 路径重写（Dynamic）
 concat("/v/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
@@ -40,7 +40,7 @@ concat("/v/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
 
 ```text
 # 匹配
-(http.host eq "<your-domain>" and http.request.uri.path matches "^/a/?$")
+(http.host eq "<your-domain>" and http.request.uri.path eq "/a")
 
 # 路径重写（Dynamic）
 concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
@@ -50,7 +50,7 @@ concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
 
 ```text
 # 匹配
-(http.host eq "<your-domain>" and http.request.uri.path matches "^/gif/?$")
+(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")
 
 # 路径重写（Dynamic）
 concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
@@ -69,7 +69,28 @@ concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 2. **`starts_with` 太宽**：`starts_with(path, "/a")` 也会命中 `/assets/main-abc123.js`（Vite 产物），
    把站点自己的 CSS/JS 重写成 `/assets/main-abc123.js/3f.jpeg`，整站白屏。`^/a/?$` 只匹配精确路径。
 
-`matches "^/<category>/?$"` 同时解决两点：与后缀无关、不会递归、不会外溢到其它路由。
+**`eq` 精确匹配**同时解决两点：与后缀无关、不会递归、不会外溢到其它路由。
+
+> **套餐可用性**：`matches`（正则）需要 **Business / WAF Advanced** 套餐，免费版会报
+> `not entitled: the use of operator Matches is not allowed`。`eq` 在所有套餐可用。
+> 想让 `/h/`（带尾斜杠）也生效，可写成
+> `(http.request.uri.path eq "/h" or http.request.uri.path eq "/h/")`；
+> 重写表达式务必用字面前缀（`concat("/h/", …)`），不要用 `concat(http.request.uri.path, "/", …)`，
+> 否则 `/h/` 会拼出 `/h//xx.jpg` 并被 307 归一化。
+
+### 症状与排查
+
+如果首页/画廊变成空白页，先在浏览器或命令行确认 bundle：
+
+```bash
+curl -sI https://<your-domain>/assets/<bundle>.js   # 期望 200
+```
+
+- **`/assets/*` 返回 404**：说明有一条前缀过宽的规则把它也改写了——最常见的是 `/a` 规则用了
+  `starts_with(..., "/a")`，而 `/assets/…` 同样以 `/a` 开头。把该规则改成
+  `http.request.uri.path eq "/a"` 即可恢复。
+- 规则改好后如果仍白屏，是浏览器/边缘缓存了那份 404：`_headers` 给 `/assets/*` 设了
+  `immutable`，清缓存或强制刷新后才会重新拉取。
 
 ## 三、约束
 
