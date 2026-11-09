@@ -15,11 +15,11 @@
 *.ttf  binary
 *.otf  binary
 
-# Produced by gen_img.py at build time; collapse them in diffs by default.
-index.js           linguist-generated=true
-functions/pic.js   linguist-generated=true
-public/counts.json linguist-generated=true
+# Produced by `python -m pipeline` at build time; collapse it in diffs.
+worker/targets.js                 linguist-generated=true
+worker/slot_formats.js            linguist-generated=true
+assets/generated/counts.json      linguist-generated=true
 
 # Image sets are assets, not source — keep them out of the language stats.
-oriImg/** linguist-vendored=true
-public/** linguist-vendored=true
+assets/original/**  linguist-vendored=true
+assets/generated/** linguist-vendored=true

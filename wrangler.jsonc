@@ -1,12 +1,12 @@
 {
   "name": "srp-img-worker",
-  "main": "index.js",
+  "main": "worker/index.js",
   "compatibility_date": "2026-01-05",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
   "assets": {
-    "directory": "./out",
+    "directory": "./dist",
     "binding": "ASSETS",
     // The access policy is read per request, so every path must reach the
     // Worker; asset-first routing would serve existing files unguarded.

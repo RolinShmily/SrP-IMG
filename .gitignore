@@ -3,9 +3,8 @@
 # dependencies
 /node_modules
 
-# next.js
-/.next/
-/out/
+# production build output (Vite multi-page build: dist/ = wrangler asset dir)
+/dist/
 
 # production
 /build
@@ -31,6 +30,7 @@ bun.lock
 # vercel
 .vercel
 
+# Local agent / tooling artifacts — never part of the shipped project
 .claude
 .memory
 .archify/
@@ -38,15 +38,12 @@ dev.log
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
-# Generated image pool — produced by gen_img.py. Only the metadata and static
-# assets below are tracked; this covers custom categories automatically.
-/public/*
-!/public/counts.json
-!/public/icon.svg
-!/public/placeholder.svg
-!/public/_headers
+# Generated image pool — produced by `python -m pipeline`, copied into dist/ by
+# vite.config.ts. Only the manifest is tracked: it is the build's data contract.
+# The hand-written static files live in assets/static/ and are committed.
+/assets/generated/*
+!/assets/generated/counts.json
 
 # Python
 __pycache__/

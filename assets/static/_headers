@@ -10,6 +10,14 @@
 /gif/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Content-hashed Vite bundle: safe to cache forever
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted fonts: stable names, so rename them when the file changes
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Metadata index should revalidate
 /counts.json
   Cache-Control: public, max-age=0, must-revalidate
