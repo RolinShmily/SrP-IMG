@@ -7,7 +7,7 @@
 | 约定 | 说明 | 出处 |
 | --- | --- | --- |
 | 行尾统一 LF | 仓库与工作区都归一为 LF，Windows 检出与 Linux CI 逐字节一致 | `.gitattributes`（`* text=auto eol=lf`） |
-| 缩进 | 默认 2 空格；`*.py`、`worker/*.js`、`functions/*.js` 为 4 空格 | `.editorconfig` |
+| 缩进 | 默认 2 空格；`*.py`、`worker/*.js` 为 4 空格 | `.editorconfig` |
 | 文件结尾 | 必须有一个换行；非 Markdown 去掉尾随空格 | `.editorconfig` |
 | 生成物不手改 | `worker/targets.js`、`worker/slot_formats.js`、`assets/generated/counts.json` 由 `python -m pipeline` 重写 | `pipeline/__init__.py`、`.github/workflows/ci.yml` |
 | 注释写"为什么" | 解释被否掉的方案、顺序约束、平台差异；不复述代码在做什么 | 代码注释现状（如 `vite.config.ts`、`worker/index.js`） |
@@ -44,14 +44,14 @@
 
 `--access-policy` 之类的旧参数已经移除，再用会以退出码 2 结束（`pipeline/config.py`、`tests/test_access_policy.py`）。
 
-## Worker JS（`worker/`、`functions/`）
+## Worker JS（`worker/`）
 
 | 约定 | 做法 | 出处 |
 | --- | --- | --- |
 | 纯 ESM | `import` / `export`，无 CommonJS、无构建步骤；`package.json` 的 `"type": "module"` | `package.json`、`worker/index.js` |
-| 缩进 4 空格 | `[worker/*.js]` 与 `[functions/*.js]` 单独规定，别用格式化工具改成 2 空格 | `.editorconfig` |
+| 缩进 4 空格 | `[worker/*.js]` 单独规定，别用格式化工具改成 2 空格 | `.editorconfig` |
 | 不用框架 | 只有 `fetch(request, env)` 与确切的 `Response`/`Request`/`Headers` 标准对象 | `worker/index.js` |
-| 责任切分 | 请求策略全在 `worker/policy.js`；`worker/index.js` 只做路由与 `Content-Type` 纠正；Pages 适配在 `worker/pages.js` | `worker/index.js` 头注释 |
+| 责任切分 | 请求策略全在 `worker/policy.js`；`worker/index.js` 只做路由与 `Content-Type` 纠正 | `worker/index.js` 头注释 |
 | 改头先复制 | `const headers = new Headers(response.headers)` 后再 `set`/`delete`，不改原对象 | `worker/index.js`、`worker/policy.js` |
 | 单引号 + 分号 | 运行时源码统一单引号、语句结尾带分号 | `worker/policy.js` |
 | 不写死部署值 | 允许名单只从 `env` 读；源码里不出现 `ACCESS_POLICY`、域名等常量 | `tests/test_access_policy.py` |

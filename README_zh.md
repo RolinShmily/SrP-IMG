@@ -14,11 +14,11 @@
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
 </p>
 
-基于 **Cloudflare Workers / Pages** 构建的轻量级无服务器多分类随机图片 API 与画廊系统。利用 Python 离线预构建技术将静态素材散列为随机访问槽位，兼顾边缘快速响应与免维护特性。
+基于 **Cloudflare Workers** 构建的轻量级无服务器多分类随机图片 API 与画廊系统。利用 Python 离线预构建技术将静态素材散列为随机访问槽位，兼顾边缘快速响应与免维护特性。
 
 ### ✨ 核心特性
 
-* **无服务器架构**：托管于 Cloudflare Workers / Pages，无需自建传统服务器，无需数据库。
+* **无服务器架构**：托管于 Cloudflare Workers，无需自建传统服务器，无需数据库。
 * **多分类全自动联动**：支持 `h` (横屏)、`v` (竖屏)、`a` (头像)、`gif` (动图) 以及自定义分类，前端全流程动态感知，后续扩充素材目录无需修改前端代码。
 * **后缀可预测**：每个分类只对外暴露一个后缀（`h/v` → `.jpg`、`a` → `.jpeg`、`gif` → `.gif`、自定义分类取首个源文件后缀），因此 `/h/<hex>.jpg` 这类地址可预测，规则层也能写成静态表达式。源图仍可能是 PNG/WebP，此时由 Worker 依据 `worker/slot_formats.js` 返回真实媒体类型——详见「后缀策略」与 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
 * **自适应瀑布流画廊**：前端自动根据元数据适配分类数量与比例，支持中英双语切换、深浅主题与 Fancybox 交互预览。
@@ -44,8 +44,6 @@
 │   ├── generated/          # 构建产物（已忽略）：counts.json + 十六进制槽位
 │   │   └── h/、v/、a/、gif/
 │   └── catalog.json        # 分类标签与后缀的唯一真源
-├── functions/              # Cloudflare Pages Functions
-│   └── pic.js              # 服务端随机重定向接口（Pages）
 ├── src/                    # Vite + React 应用源码
 │   ├── main.tsx            # 客户端入口（挂载共享应用）
 │   ├── app.tsx             # 路由、Provider 与路由过渡外壳
@@ -72,7 +70,7 @@
 │   └── worker_targets.py    # worker/targets.js 数据生成器（无逻辑）
 ├── contracts/              # 跨层契约（manifest JSON Schema）
 ├── tests/                  # 自动化回归测试套件
-│   ├── backend-contract.test.mjs   # Worker / Pages 安全与 HTTP 契约测试
+│   ├── backend-contract.test.mjs   # Worker 安全与 HTTP 契约测试
 │   ├── worker/source-equivalence.test.mjs # 与 P2 前构建产物的差分级 HTTP 矩阵
 │   ├── pipeline/test_pipeline.py   # 管线行为、槽位命名与清单契约
 │   └── test_access_policy.py       # 运行时策略环境变量与生成数据检查
@@ -84,9 +82,7 @@
 ├── worker/                 # 手写运行时（导入生成的数据）
 │   ├── index.js            # Cloudflare Workers 入口
 │   ├── policy.js           # 访问策略引擎（env、CORS、Referer、响应头）
-│   ├── pages.js            # Cloudflare Pages 适配器
 │   └── targets.js          # 生成的分类数据（请勿手改）
-├── functions/pic.js        # Pages 对 worker/pages.js 的再导出
 ├── .dev.vars.example       # 本地 Worker 环境变量模板（访问策略）
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
 ├── docs/                   # 四套规范 + 产品截图（从 docs/README.md 开始）
@@ -168,16 +164,9 @@ npm run dev
 
 要在 Cloudflare 运行时验证随机接口与访问策略，请先执行 `npm run build`，再运行 `npx wrangler dev --local`，打开 Wrangler 显示的地址。Windows 下重新构建前需停止该本地 Wrangler 进程，因为它会占用 `dist/` 目录。仅运行 Vite 开发服务不会执行 Worker。
 
-#### 4. Cloudflare Pages / Workers 生产构建
+#### 4. Cloudflare Workers 生产构建
 
-在 Cloudflare Pages 仪表板配置如下：
-
-* **框架预设**：`Vite`
-* **构建命令**：`npm run build:all`（或 `python3 -m pipeline --hash-length 2 && npm run build`）
-* **输出目录**：`dist`
-* **环境变量**：确保 Python 环境为 3.8+
-
-如果使用 **Cloudflare Workers**，配置根目录的 `wrangler.jsonc`：
+配置根目录的 `wrangler.jsonc`（Workers + Static Assets 是唯一支持的部署形态；Pages 适配器已移除）：
 
 ```jsonc
 {
@@ -202,7 +191,7 @@ npm run dev
 
 #### 方式 A：服务端 API (JS 重定向)
 
-由 `worker/pages.js`（Pages：`/pic`，经 `functions/pic.js` 再导出）或 `worker/index.js`（Workers：`/pic` 与 `/api/pic`）提供支持；外部网页引用前请配置下文的访问策略：
+由 `worker/index.js`（Workers：`/pic`）提供支持；外部网页引用前请配置下文的访问策略：
 
 | 功能描述 | 调用地址 | 返回结果 |
 | :--- | :--- | :--- |
@@ -229,7 +218,7 @@ npm run dev
 访问策略与 `Content-Type` 纠正完全一致。
 
 为每个分类建一条 **Rewrite URL** 规则（*将 `<your-domain>` 替换为实际域名*）。匹配条件必须是**精确路径**：`eq` 在所有套餐可用；`matches` 需要 Business / WAF Advanced；
-`starts_with` 会连 `/api/pic` 一起匹配（历史上还吞掉过 `/assets/…` 的 bundle），而按扩展名写的终止条件会把整个 zone 锁死为单一后缀。两处坑的详细说明见 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
+`starts_with` 会吞掉所有以 `/a` 开头的路径（历史上就把 `/assets/…` 的 bundle 一起改写了），而按扩展名写的终止条件会把整个 zone 锁死为单一后缀。两处坑的详细说明见 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
 
 | 分类 | 匹配表达式 | 路径重写 (Dynamic) |
 | :--- | :--- | :--- |
@@ -239,7 +228,7 @@ npm run dev
 | `gif` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
 > **注意**
-> * `matches` 需要 Business / WAF Advanced 套餐，示例改用所有套餐都支持的 `eq`；切勿用 `starts_with("/a")`——它同时命中 `/api/pic`（历史上还因吞掉 `/assets/…` 让站点白屏）。
+> * `matches` 需要 Business / WAF Advanced 套餐，示例改用所有套餐都支持的 `eq`；切勿用 `starts_with("/a")`——它会命中所有以 `/a` 开头的路径（历史上就因吞掉 `/assets/…` 让站点白屏）。
 > * 重写表达式里的后缀必须与 `assets/catalog.json` 中该分类的 `ext_policy` 一致。
 > * `substring` 的截取长度必须与 `--hash-length` 一致（`2` → `0, 2`，即 256 个槽位）。
 > * 必须保持 `assets.run_worker_first: true`——重写后的请求仍会经过 Worker，由它执行访问策略并纠正 `Content-Type`。
@@ -251,7 +240,7 @@ npm run dev
 ### 🛡️ 访问策略
 
 白名单是运行时配置，不是构建输入。`worker/policy.js` 是手写源码，不包含任何域名，
-请求到来时才从 Worker / Pages 的环境变量读取。因此仓库、构建产物与已部署的 bundle 里都不会
+请求到来时才从 Worker 的环境变量读取。因此仓库、构建产物与已部署的 bundle 里都不会
 出现你的域名。照常部署，然后写入变量即可——Cloudflare 加密保存，下一次请求立即生效，无需重建：
 
 ```bash
@@ -263,7 +252,7 @@ npx wrangler secret put REFERER_ALLOWED_HOSTS
 只存在于该文件和后端源码里。
 
 被策略拒绝的请求与不存在的图片返回完全相同的响应，配置错误只写日志、不回给调用方，
-因此无法用响应差异反推规则。请求头检查不等于身份认证：该边界以及 Workers / Pages 的差异见
+因此无法用响应差异反推规则。请求头检查不等于身份认证：该边界见
 [SECURITY.md](SECURITY.md)（英文）。
 
 无需重新生成仓库图片池，即可运行全部确定性测试（管线、访问策略、HTTP 契约）：
@@ -291,13 +280,13 @@ python tests/test_access_policy.py
    * 若目录名为 `h` 或 `v`，输出后缀强制遵循命令行参数（默认 `.jpg`）。
    * 否则，自动探测该目录首张图片的后缀并保留。
 3. **元数据导出**：生成 `counts.json`，记录每个分类的图片总数 (`counts`) 和对应后缀 (`category_exts`)。
-4. **字节格式校验**：后缀是路由约定，而非编码承诺。`h`/`v`/`a` 里的 PNG 或 WebP 源文件会被原样拷进 `.jpg`/`.jpeg` 槽位，于是后缀与真实字节不符（`a` 56/114、`h` 43/138、`v` 7/67）。改槽位后缀就会改 URL，所以图片池保留后缀：管线把每个槽位的格式编码写入 `worker/slot_formats.js`，Worker 再按该表覆写图片响应的 `Content-Type`（受保护与未受保护两条分支都覆盖，例如 `/a/01.jpeg` 的真实字节是 WebP，响应即为 `image/webp`）。该机制依赖 `assets.run_worker_first: true`；绕过 Worker 的请求（包括没有静态资产分支的 Pages 适配器）仍会拿到由后缀推导的头。每次运行都会为受影响的分类各打印一行提示，`--strict-formats` 在写出任何产物之前以退出码 1 中止，测试还会锁死真实错配数量，避免修复悄悄失效。把某分类的 `ext_policy` 改成 `"source"` 只会取整类首张源文件的后缀，因此仅对后缀同质的分类（`gif`）能真正消除错配；而且会改变该分类的 URL 并需要重跑图片池。若要让落盘文件本身也诚实，只能转码源图或改成逐槽位后缀（即改 URL），本次未做。
+4. **字节格式校验**：后缀是路由约定，而非编码承诺。`h`/`v`/`a` 里的 PNG 或 WebP 源文件会被原样拷进 `.jpg`/`.jpeg` 槽位，于是后缀与真实字节不符（`a` 56/114、`h` 43/138、`v` 7/67）。改槽位后缀就会改 URL，所以图片池保留后缀：管线把每个槽位的格式编码写入 `worker/slot_formats.js`，Worker 再按该表覆写图片响应的 `Content-Type`（受保护与未受保护两条分支都覆盖，例如 `/a/01.jpeg` 的真实字节是 WebP，响应即为 `image/webp`）。该机制依赖 `assets.run_worker_first: true`；绕过 Worker 的请求（例如改成资产优先路由）仍会拿到由后缀推导的头。每次运行都会为受影响的分类各打印一行提示，`--strict-formats` 在写出任何产物之前以退出码 1 中止，测试还会锁死真实错配数量，避免修复悄悄失效。把某分类的 `ext_policy` 改成 `"source"` 只会取整类首张源文件的后缀，因此仅对后缀同质的分类（`gif`）能真正消除错配；而且会改变该分类的 URL 并需要重跑图片池。若要让落盘文件本身也诚实，只能转码源图或改成逐槽位后缀（即改 URL），本次未做。
 
 ---
 
 ### 📦 存储与容量管理 (关键说明)
 
-由于 Cloudflare Pages 及其他 CI/CD 平台对单次构建的文件总数和总体积有严格限制，本项目引入了**体积熔断机制**：
+由于 CI/CD 平台对单次构建的文件总数和总体积有严格限制，本项目引入了**体积熔断机制**：
 
 #### 1. 文件体积限制
 

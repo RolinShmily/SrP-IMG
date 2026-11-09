@@ -65,7 +65,7 @@ function withSlotContentType(response, category, slot) {
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
-        if (url.pathname === '/pic' || url.pathname === '/api/pic') return handleRequest(request, env);
+        if (url.pathname === '/pic') return handleRequest(request, env);
         const resolved = resolvePolicy(env);
         if (resolved.error) return misconfigured(request);
         const policy = resolved.policy;

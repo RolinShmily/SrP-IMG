@@ -8,7 +8,7 @@
 | :--- | :--- | :--- | :--- |
 | 数据层 | `assets/original/`、`assets/catalog.json` | 源图与分类注册表，唯一的内容真相 | 人工 |
 | 构建层 | `pipeline/` | 扫描、槽位生成、清单、Worker 数据模块 | `python -m pipeline` |
-| 运行时 | `worker/`、`functions/pic.js` | 302 跳转、访问策略、资产保护、MIME 纠正 | 人工（数据模块除外） |
+| 运行时 | `worker/` | 302 跳转、访问策略、资产保护、MIME 纠正 | 人工（数据模块除外） |
 | 展示层 | `src/`、`index.html`、`gallery.html`、`settings.html`、`assets/static/` | Vite + React 多页应用与手写静态文件 | 人工 |
 | 部署产物 | `dist/` | 上传给 Workers Assets 的目录 | `vite build` |
 
@@ -23,8 +23,7 @@
 | `assets/generated/counts.json` | `python -m pipeline` | `src/`（`/counts.json`）、`tests/`、CI diff | 是 |
 | `worker/targets.js` | `python -m pipeline` | `worker/index.js`、`worker/policy.js` | 是 |
 | `worker/slot_formats.js` | `python -m pipeline` | `worker/index.js`、`tests/` | 是 |
-| `worker/index.js`、`worker/policy.js`、`worker/pages.js` | 人工 | wrangler（`main`）、Pages | 是 |
-| `functions/pic.js` | 人工（re-export） | Pages Functions | 是 |
+| `worker/index.js`、`worker/policy.js` | 人工 | wrangler（`main`） | 是 |
 | `src/**`、三个 HTML、`vite.config.ts` | 人工 | `vite build` | 是 |
 | `contracts/**` | 人工 | `pipeline/manifest.py` 校验、review | 是 |
 | `dist/**` | `vite build` | `wrangler deploy` | 否（`.gitignore`） |

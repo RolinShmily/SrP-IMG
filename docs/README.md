@@ -58,7 +58,7 @@
 ### reference
 
 - [README.md](reference/README.md) — 参考分册导读
-- [api.md](reference/api.md) — `/pic`、`/api/pic`、直链、UA 分流、状态码与响应头
+- [api.md](reference/api.md) — `/pic`、直链、UA 分流、状态码与响应头
 - [configuration.md](reference/configuration.md) — 环境变量全表、`wrangler.jsonc`、`catalog.json`、CLI 参数
 - [generated-files.md](reference/generated-files.md) — `counts.json` 字段、`targets.js`、`slot_formats.js`、`dist/` 结构
 - [transform-rules.md](reference/transform-rules.md) — 边缘重写（Transform Rules）配置与坑位

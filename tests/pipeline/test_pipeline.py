@@ -415,11 +415,10 @@ class PipelineRunTests(unittest.TestCase):
                 "assets/generated/h/sub/keep.txt": b"nested",
                 "assets/static/_headers": b"/*\n  X-Test: 1\n",
                 "assets/static/icon.svg": b"<svg/>",
-                "functions/other.js": b"// keep",
+                "worker/policy.js": b"// keep",
                 # Runtime sources are hand-written now: the pipeline must never
                 # overwrite them, only the generated data module.
-                "index.js": b"// hand-written entry, not generated",
-                "functions/pic.js": b"// hand-written adapter, not generated",
+                "worker/index.js": b"// hand-written entry, not generated",
                 "worker/targets.js": b"// stale",
             })
             self.assertEqual(run_pipeline(work, "--hash-length", "1").returncode, 0)
@@ -427,9 +426,8 @@ class PipelineRunTests(unittest.TestCase):
             self.assertTrue((work / "assets" / "generated" / "h" / "sub" / "keep.txt").exists())
             self.assertEqual((work / "assets" / "static" / "_headers").read_bytes(), b"/*\n  X-Test: 1\n")
             self.assertEqual((work / "assets" / "static" / "icon.svg").read_bytes(), b"<svg/>")
-            self.assertEqual((work / "functions" / "other.js").read_bytes(), b"// keep")
-            self.assertEqual((work / "index.js").read_bytes(), b"// hand-written entry, not generated")
-            self.assertEqual((work / "functions" / "pic.js").read_bytes(), b"// hand-written adapter, not generated")
+            self.assertEqual((work / "worker" / "policy.js").read_bytes(), b"// keep")
+            self.assertEqual((work / "worker" / "index.js").read_bytes(), b"// hand-written entry, not generated")
             self.assertNotEqual((work / "worker" / "targets.js").read_bytes(), b"// stale")
 
     def test_removed_flag_is_still_rejected_without_writing(self):

@@ -5,7 +5,7 @@ SrP-IMG 有意保留**三种入口**指向同一份图片池，并且三者并�
 | 入口 | 示例 | 最终响应 |
 |---|---|---|
 | 边缘重写（本篇） | `/h` | Transform Rules 重写到随机槽位，再由 Worker 包装 |
-| Worker API | `/pic?img=h`（含 `/api/pic`） | Worker 返回 `302` → 槽位 |
+| Worker API | `/pic?img=h` | Worker 返回 `302` → 槽位 |
 | 画廊 / 直链 | `/h/00.jpg` | 槽位本身，同样经过 Worker |
 
 三条路径落到同一份资产，因此访问策略、缓存头与 `Content-Type` 纠正
@@ -66,10 +66,9 @@ concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
    规则会再次触发，产出 `/gif/0a.gif/3f.jpg`。要让规则成立，所有分类就必须共用一个后缀——
    这就是"源图必须预先转成目标格式"那条约定的来源。当前代码里已经没有任何层依赖后缀唯一性
    （Worker 按分类算 `Location`，`_headers` 按路径，画廊按 `counts.json` 取后缀）。
-2. **`starts_with` 太宽**：`starts_with(path, "/a")` 会命中所有以 `/a` 开头的路径——`/api/pic`（Worker
-   别名），以及历史上曾经作为 Vite 产物目录的 `/assets/main-*.js`。后者真实发生过：`/assets/…` 被改写后
-   404，整站白屏。本项目已把 bundle 移到 `/static/` 以彻底避开单字母前缀，但 `/api/pic` 依然存在，
-   所以仍然必须用精确匹配。
+2. **`starts_with` 太宽**：`starts_with(path, "/a")` 会命中所有以 `/a` 开头的路径。历史上 Vite 产物
+   目录正是 `/assets/main-*.js`，被改写后 404，整站白屏。本项目已把 bundle 移到 `/static/`，也不再
+   保留 `/api/*` 别名，但前缀匹配本身仍不安全，所以必须用精确匹配。
 
 **`eq` 精确匹配**同时解决两点：与后缀无关、不会递归、不会外溢到其它路由。
 
@@ -89,7 +88,7 @@ curl -sI https://<your-domain>/static/<bundle>.js   # 期望 200
 ```
 
 - **bundle 404**：说明有一条前缀过宽的规则改写了它。检查所有 `starts_with` 规则——`/a` 规则最容易
-  误伤 `/api/pic`（历史上还误伤过 `/assets/…`）。把匹配改成 `http.request.uri.path eq "/a"` 即可恢复。
+  误伤它（历史上就吞掉过 `/assets/…` 的 bundle）。把匹配改成 `http.request.uri.path eq "/a"` 即可恢复。
 - 规则改好后如果仍白屏，是浏览器缓存了那份 404：强制刷新（Ctrl+Shift+R），必要时在 Dashboard 清
   该前缀的缓存。
 

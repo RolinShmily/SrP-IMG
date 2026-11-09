@@ -6,7 +6,7 @@
 
 参与者：浏览器 → Worker（`handleRequest`）→ `worker/policy.js` → `worker/targets.js`。
 
-1. 浏览器请求 `/pic?img=h`（或别名 `/api/pic?img=h`）；Worker 入口按路径前缀分流到 `handleRequest`（`worker/index.js`）。
+1. 浏览器请求 `/pic?img=h`；Worker 入口按路径前缀分流到 `handleRequest`（`worker/index.js`）。
 2. `resolvePolicy(env)` 解析七个环境变量；命中 `policyCache` 就复用，非法配置直接返回 500（`worker/policy.js`）。
 3. `checkAccess` 依次检查 Origin、方法（`GET`/`HEAD`/`OPTIONS`）、Referer；不通过时回 404 或 405（`worker/policy.js`）。
 4. `resolveTarget` 读 `img` 参数：`ua` 用 `MOBILE_UA` 正则决定 `TARGETS.v` 还是 `TARGETS.h`，其余按 `TARGETS` 自有键查表（`worker/policy.js`）。

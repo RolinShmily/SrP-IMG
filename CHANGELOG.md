@@ -113,6 +113,12 @@ Nothing yet — see [0.3.0](#030---2026-11-09) for the current release.
   swallow the SPA bundle. `/static/*` also lost its year-long `immutable`
   header: `_headers` matches by path only, so it pinned a transient 404.
 
+* **Single runtime surface** — Dropped the undocumented `/api/pic` alias and the
+  Cloudflare Pages adapter (`functions/pic.js`, `worker/pages.js`). The Worker
+  answers `/pic` only; the contract suite no longer runs a Pages variant, and the
+  docs, README, SECURITY and `.dev.vars.example` describe one deployment shape.
+  `/api/pic` was the last path that a `starts_with("/a")` rule could break.
+
 ## [0.2.1] - 2026-10-27
 
 ### Changed

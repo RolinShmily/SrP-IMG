@@ -20,6 +20,3 @@ indent_size = 4
 # reformatting by hand.
 [worker/*.js]
 indent_size = 4
-
-[functions/*.js]
-indent_size = 4

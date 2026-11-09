@@ -14,11 +14,11 @@
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
 </p>
 
-A lightweight, serverless multi-category random image API and visual gallery built on **Cloudflare Workers / Pages**. It uses Python pre-build hashing to distribute static images across deterministic random slots, offering low latency and zero maintenance.
+A lightweight, serverless multi-category random image API and visual gallery built on **Cloudflare Workers**. It uses Python pre-build hashing to distribute static images across deterministic random slots, offering low latency and zero maintenance.
 
 ### ✨ Core Features
 
-* **Serverless Architecture**: Hosted on Cloudflare Workers / Pages — no dedicated servers or databases to maintain.
+* **Serverless Architecture**: Hosted on Cloudflare Workers — no dedicated servers or databases to maintain.
 * **Fully Automated Multi-Category Support**: Supports `h` (landscape), `v` (portrait), `a` (avatars), `gif` (animated GIFs), and custom folders with zero frontend code modification.
 * **Predictable Suffixes**: Each category advertises exactly one suffix (`.jpg` for `h/v`, `.jpeg` for `a`, `.gif` for `gif`, first source suffix for custom categories), so `/h/<hex>.jpg` stays guessable and the edge-rewrite rules can be static. Sources may still arrive as PNG/WebP; the Worker then serves the real media type from `worker/slot_formats.js` — see "Extension Strategy" and [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md).
 * **Adaptive Waterfall Gallery**: Automatically derives categories, item counts, and aspect ratios from build metadata; supports English/Chinese i18n, dark/light themes, and Fancybox previews.
@@ -44,8 +44,6 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 │   ├── generated/          # Build artifact (git-ignored): counts.json + hex slots
 │   │   └── h/, v/, a/, gif/
 │   └── catalog.json        # Single source of truth for category labels & formats
-├── functions/              # Cloudflare Pages Functions
-│   └── pic.js              # Server-side redirect API endpoint (Pages)
 ├── src/                    # Vite + React application
 │   ├── main.tsx            # Client entry (mounts the shared app)
 │   ├── app.tsx             # Router, providers & route transition shell
@@ -72,7 +70,7 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 │   └── worker_targets.py    # worker/targets.js data emitter (no logic)
 ├── contracts/              # Cross-layer contracts (manifest JSON Schema)
 ├── tests/                  # Automated test suite
-│   ├── backend-contract.test.mjs   # Worker / Pages security & HTTP contract tests
+│   ├── backend-contract.test.mjs   # Worker security & HTTP contract tests
 │   ├── worker/source-equivalence.test.mjs # Differential HTTP matrix vs the pre-P2 build
 │   ├── pipeline/test_pipeline.py   # Pipeline behaviour, slot naming, manifest contract
 │   └── test_access_policy.py       # Runtime-policy env format & generated-data checks
@@ -84,9 +82,7 @@ A lightweight, serverless multi-category random image API and visual gallery bui
 ├── worker/                 # Hand-written runtime (imports generated data)
 │   ├── index.js            # Cloudflare Workers entry
 │   ├── policy.js           # Access-policy engine (env, CORS, Referer, headers)
-│   ├── pages.js            # Cloudflare Pages adapter
 │   └── targets.js          # Generated category data (do not edit)
-├── functions/pic.js        # Pages re-export of worker/pages.js
 ├── .dev.vars.example       # Template for local Worker env bindings (policy)
 ├── wrangler.jsonc          # Cloudflare Workers configuration
 ├── docs/                   # Handbooks + product screenshots (start at docs/README.md)
@@ -168,16 +164,10 @@ npm run dev
 
 To test the random endpoint and access policy in the Cloudflare runtime, run `npm run build`, then `npx wrangler dev --local`, and open the URL Wrangler prints. On Windows, stop this local Wrangler process before rebuilding because it holds the `dist/` directory open. The Vite development server alone does not execute the Worker.
 
-#### 4. Cloudflare Pages / Workers Production Build
+#### 4. Cloudflare Workers Production Build
 
-Configure Cloudflare Pages as follows:
-
-* **Framework Preset**: `Vite`
-* **Build Command**: `npm run build:all` (or `python3 -m pipeline --hash-length 2 && npm run build`)
-* **Build Output Directory**: `dist`
-* **Environment**: Python 3.8+
-
-If deploying to **Cloudflare Workers**, configure `wrangler.jsonc`:
+Configure `wrangler.jsonc` (Workers + Static Assets is the only supported target;
+the Pages adapter was removed):
 
 ```jsonc
 {
@@ -202,7 +192,7 @@ Deploy command: `npm run deploy` (or `npx wrangler deploy`)
 
 #### Method A: Serverless API (JS Redirection)
 
-Powered by `worker/pages.js` via `functions/pic.js` (Pages: `/pic`) or `worker/index.js` (Workers: `/pic` and `/api/pic`). Configure the access policy below before embedding in external websites:
+Powered by `worker/index.js` (Workers: `/pic`). Configure the access policy below before embedding in external websites:
 
 | Endpoint | Target / Behavior | Description |
 | :--- | :--- | :--- |
@@ -230,9 +220,8 @@ gallery's direct slot links — all three entry points end at the same asset, wi
 the same access policy and the same corrected `Content-Type`.
 
 Create one **Rewrite URL** rule per category (*replace `<your-domain>`*). The match must be an **exact path**: `eq` works on every plan, while `matches`
-requires Business / WAF Advanced, `starts_with` also matches `/api/pic` (and once
-swallowed the bundle under `/assets/…`), and an extension-based guard locks the
-zone to a single suffix. Both pitfalls are
+requires Business / WAF Advanced, `starts_with` once swallowed the bundle under
+`/assets/…`, and an extension-based guard locks the zone to a single suffix. Both pitfalls are
 explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md).
 
 | Category | Match expression | Rewrite path (dynamic) |
@@ -243,7 +232,7 @@ explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-ru
 | `gif` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
 > **Notes**
-> * `matches` needs a Business / WAF Advanced plan; the examples use `eq`, which works on every plan. Never use `starts_with("/a")` — it also matches `/api/pic` (and used to blank the site by swallowing `/assets/…`).
+> * `matches` needs a Business / WAF Advanced plan; the examples use `eq`, which works on every plan. Never use `starts_with("/a")` — it matches every path that starts with `/a` (it once blanked the site by swallowing `/assets/…`).
 > * The suffix in each rewrite expression must equal that category's `ext_policy` in `assets/catalog.json`.
 > * The substring length must equal `--hash-length` (`2` → `0, 2`, i.e. 256 slots).
 > * `assets.run_worker_first: true` must stay enabled — the rewritten request still goes through the Worker, which applies the access policy and corrects `Content-Type`.
@@ -255,8 +244,8 @@ explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-ru
 ### 🛡️ Access policy
 
 The allowlist is runtime configuration, not build input. `worker/policy.js` is
-hand-written source without any hostname and reads its policy from Worker / Pages
-environment variables on every request, so neither the repository,
+hand-written source without any hostname and reads its policy from the Worker
+environment on every request, so neither the repository,
 the build artifact, nor the deployed bundle contains your domains. Deploy as
 usual, then set the values — Cloudflare stores them encrypted and the next
 request picks them up, with no rebuild:
@@ -273,8 +262,7 @@ names, syntax, and defaults live only in that file and in the Worker source.
 A request rejected by the policy is answered exactly like a missing image, and a
 misconfiguration is logged rather than described to the caller, so responses
 cannot be used to map the rules. Header checks are not authentication: see
-[SECURITY.md](SECURITY.md) for that boundary and for the Workers-vs-Pages
-differences.
+[SECURITY.md](SECURITY.md) for that boundary.
 
 Run every deterministic suite (pipeline, access policy, HTTP contract) without
 regenerating the repository image pool:
@@ -302,13 +290,13 @@ When executed as `python -m pipeline`, it performs:
    * If named `h` or `v`, enforces the CLI extension (defaults to `.jpg`).
    * Otherwise, auto-detects the extension from the first image in that directory.
 3. **Metadata Export**: Generates `counts.json` containing total image counts (`counts`) and extension mappings (`category_exts`).
-4. **Format Guard**: The suffix is a routing contract, not an encoding claim. A PNG or WebP source in `h`/`v`/`a` is copied verbatim into a `.jpg`/`.jpeg` slot, so the suffix and the bytes disagree (56/114 in `a`, 43/138 in `h`, 7/67 in `v`). Renaming a slot would change its URL, so the pool keeps the suffix: the pipeline writes one format code per slot into `worker/slot_formats.js`, and the Worker overwrites `Content-Type` from that table for both protected and unprotected image responses (`/a/01.jpeg` is really WebP and is served as `image/webp`). This requires `assets.run_worker_first: true`; requests that bypass the Worker (including the Pages adapter, which has no asset branch) keep the suffix-derived header. Each run prints one line per affected category, `--strict-formats` aborts with exit code 1 before anything is written, and a test pins the real mismatch counts so the fix cannot silently rot. Switching a category's `ext_policy` to `"source"` only takes the *first* source's suffix for the whole category, so it clears the drift only for suffix-homogeneous categories (`gif`) while changing that category's URLs and requiring a pool regeneration. Making the files on disk honest too would need transcoding or per-slot suffixes (new URLs); that is deliberately not done.
+4. **Format Guard**: The suffix is a routing contract, not an encoding claim. A PNG or WebP source in `h`/`v`/`a` is copied verbatim into a `.jpg`/`.jpeg` slot, so the suffix and the bytes disagree (56/114 in `a`, 43/138 in `h`, 7/67 in `v`). Renaming a slot would change its URL, so the pool keeps the suffix: the pipeline writes one format code per slot into `worker/slot_formats.js`, and the Worker overwrites `Content-Type` from that table for both protected and unprotected image responses (`/a/01.jpeg` is really WebP and is served as `image/webp`). This requires `assets.run_worker_first: true`; requests that bypass the Worker (for example asset-first routing) keep the suffix-derived header. Each run prints one line per affected category, `--strict-formats` aborts with exit code 1 before anything is written, and a test pins the real mismatch counts so the fix cannot silently rot. Switching a category's `ext_policy` to `"source"` only takes the *first* source's suffix for the whole category, so it clears the drift only for suffix-homogeneous categories (`gif`) while changing that category's URLs and requiring a pool regeneration. Making the files on disk honest too would need transcoding or per-slot suffixes (new URLs); that is deliberately not done.
 
 ---
 
 ### 📦 Storage & Capacity Management
 
-Because Cloudflare Pages and other CI platforms enforce limits on file counts and total artifact sizes, this project includes an **automatic size circuit-breaker**:
+Because CI platforms enforce limits on file counts and total artifact sizes, this project includes an **automatic size circuit-breaker**:
 
 #### 1. File Size Threshold
 

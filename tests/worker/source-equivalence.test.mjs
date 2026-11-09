@@ -79,7 +79,6 @@ const PATHS = [
   '/pic?img=a',
   '/pic?img=gif',
   '/pic?img=bogus',
-  '/api/pic?img=h',
   '/h/00.jpg',
   // 01 is a WebP payload under the .jpeg suffix; 00 happens to match.
   '/a/01.jpeg',
@@ -107,7 +106,6 @@ const HEADER_VARIANTS = [
 
 const METHOD_CASES = [
   ['HEAD', '/pic?img=h', {}],
-  ['HEAD', '/api/pic?img=h', {}],
   ['HEAD', '/h/00.jpg', { Origin: 'https://client.example' }],
   ['POST', '/pic?img=h', {}],
   ['OPTIONS', '/pic?img=h', { Origin: 'https://client.example' }],

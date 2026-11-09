@@ -4,7 +4,7 @@
 
 ## 1. 运行时环境变量
 
-七个变量全部由 `worker/policy.js::buildPolicy` 读取，因此 Workers 与 Pages 两个入口共用同一套语义。默认值是硬编码在代码里、不在仓库内的（`wrangler.jsonc` 明确说明不放 `vars`）。
+七个变量全部由 `worker/policy.js::buildPolicy` 读取，因此单一 Workers 入口只有一套语义。默认值是硬编码在代码里、不在仓库内的（`wrangler.jsonc` 明确说明不放 `vars`）。
 
 | 变量 | 默认值 | 语义 | 出处 |
 | --- | --- | --- | --- |

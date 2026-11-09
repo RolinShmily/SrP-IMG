@@ -4,7 +4,7 @@
 
 | 文档 | 内容 |
 | --- | --- |
-| [api.md](./api.md) | 运行时 API 契约：`/pic`、`/api/pic`、直链、UA 分流、状态码、响应头、`Content-Type` 纠正 |
+| [api.md](./api.md) | 运行时 API 契约：`/pic`、直链、UA 分流、状态码、响应头、`Content-Type` 纠正 |
 | [configuration.md](./configuration.md) | 七组环境变量、`wrangler.jsonc`、`assets/catalog.json`、`pipeline` CLI、`_headers`、改动副作用 |
 | [generated-files.md](./generated-files.md) | `counts.json`、`worker/targets.js`、`worker/slot_formats.js`、`dist/` 结构 |
 | [transform-rules.md](./transform-rules.md) | 边缘重写（Cloudflare Transform Rules）的四条规则、约束与坑位 |
@@ -15,7 +15,7 @@
 
 | 问题 | 答案 | 去哪看 |
 | --- | --- | --- |
-| 随机图接口有哪些 | `/pic?img=<key>` 与 `/api/pic`，同一实现 | [api.md §1](./api.md) |
+| 随机图接口有哪些 | `/pic?img=<key>`，302 重定向 | [api.md §1](./api.md) |
 | 有哪些合法的 `img` 值 | `TARGETS` 的四个键加 `ua` | [api.md §2](./api.md) |
 | `img=ua` 怎么判 | 单个 UA 正则，命中走 `v`，否则走 `h` | [api.md §3](./api.md) |
 | 什么时候 404 / 405 / 500 | 一张状态码表，含判定顺序 | [api.md §4](./api.md) |
@@ -49,7 +49,7 @@
 | 规则 | 要点 | 出处 |
 | --- | --- | --- |
 | 每分类一条 Rewrite URL | 匹配 `http.request.uri.path eq "/<category>"`，重写到 `/<category>/<hex>.<suffix>` | `transform-rules.md` §1 |
-| 必须用 `eq`，不要用 `starts_with`/`matches` | `matches` 需要 Business / WAF Advanced；`starts_with("/a")` 会误伤 `/api/pic`（历史上误伤过 `/assets/…`） | `transform-rules.md` §2 |
+| 必须用 `eq`，不要用 `starts_with`/`matches` | `matches` 需要 Business / WAF Advanced；`starts_with("/a")` 会命中所有以 `/a` 开头的路径（历史上误伤过 `/assets/…`） | `transform-rules.md` §2 |
 | 后缀必须等于 `ext_policy` | 改分类后缀要同时改规则并重生成池子 | `transform-rules.md` §3 |
 | `substring` 长度必须等于 `--hash-length` | 当前 `0, 2` 对应 256 槽 | `transform-rules.md` §3 |
 

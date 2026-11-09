@@ -37,7 +37,7 @@ is live and credit you if you asked for it.
 
 ## In scope
 
-* The redirect endpoints (`/pic`, `/api/pic`) and their handling of user input.
+* The redirect endpoints (`/pic`) and their handling of user input.
 * The static gallery frontend (`app/`, `components/`).
 * The build pipeline (`pipeline/`, run as `python -m pipeline`) and the deploy workflow in `.github/workflows/`.
 * Exposed secrets or credentials in the repository or its history.
@@ -45,7 +45,7 @@ is live and credit you if you asked for it.
 
 ## Access-policy boundary
 
-The Referer and CORS allowlists are Worker / Pages environment variables read at
+The Referer and CORS allowlists are Worker environment variables read at
 request time, deliberately absent from the repository and from the deployed
 bundle. Variable names, list syntax, and defaults are in
 [`.dev.vars.example`](./.dev.vars.example).
@@ -64,9 +64,9 @@ plausible hostname.
 
 The Worker protects both redirect routes and, by default, category image files.
 Keep `assets.run_worker_first: true` so existing static assets reach the Worker.
-Pages `functions/pic.js` protects `/pic` only; Pages static files, the unconfigured
-`/api/pic` alias, and rewrites that bypass the function need separate middleware
-or account-level rules. HTML and metadata stay public. See the [README access
+The Worker is the only runtime: there is no Pages variant, so the redirect route
+and category assets are guarded everywhere the Worker runs. HTML and metadata
+stay public. See the [README access
 policy](./README.md#-access-policy) for the deployment model,
 matching rules, and cache boundaries.
 

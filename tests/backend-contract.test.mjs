@@ -13,12 +13,11 @@ let modules = {};
 // The runtime is checked-in source now, so the tests import it directly instead
 // of spawning the Python generator for a throwaway build.
 before(async () => {
-  const [worker, pages, targets] = await Promise.all([
+  const [worker, targets] = await Promise.all([
     import(pathToFileURL(path.join(root, 'worker', 'index.js')).href),
-    import(pathToFileURL(path.join(root, 'functions', 'pic.js')).href),
     import(pathToFileURL(path.join(root, 'worker', 'targets.js')).href),
   ]);
-  modules = { worker, pages };
+  modules = { worker };
   // Fixture-only categories: the committed manifest ships the four built-ins,
   // while these assertions also cover a custom category and a zero-slot one.
   targets.TARGETS.custom = { dir: 'custom', slots: 16, ext: '.gif', label: 'custom' };
@@ -26,7 +25,7 @@ before(async () => {
 
   // No deployment-specific value may be baked into the shipped runtime.
   const sources = await Promise.all([
-    'worker/index.js', 'worker/policy.js', 'worker/pages.js', 'functions/pic.js',
+    'worker/index.js', 'worker/policy.js', 'worker/targets.js',
   ].map(name => readFile(path.join(root, name), 'utf8')));
   for (const source of sources) {
     assert.equal(source.includes('ACCESS_POLICY'), false);
@@ -42,13 +41,7 @@ after(async () => {
   })));
 });
 
-function handlerFor(mode, impl) {
-  return mode === 'pages'
-    ? request => impl.onRequest({ request, env: request.__env })
-    : request => impl.default.fetch(request, request.__env);
-}
-
-async function start(mode, env, { failingAssets = false } = {}) {
+async function start(env, { failingAssets = false } = {}) {
   let assetCalls = 0;
   const bindings = {
     ...env,
@@ -71,7 +64,7 @@ async function start(mode, env, { failingAssets = false } = {}) {
       },
     },
   };
-  const handle = handlerFor(mode, modules[mode]);
+  const handle = request => modules.worker.default.fetch(request, request.__env);
   const server = http.createServer(async (incoming, outgoing) => {
     try {
       const request = new Request('http://' + incoming.headers.host + incoming.url, {
@@ -116,9 +109,8 @@ const TRUSTED_ENV = {
   CORS_ALLOWED_ORIGINS: 'https://client.example,http://localhost:4321',
 };
 
-for (const mode of ['worker', 'pages']) {
-  test(mode + ': unset env keeps the portable defaults', async () => {
-    const api = await start(mode, {});
+  test('unset env keeps the portable defaults', async () => {
+    const api = await start({});
     let response = await api.request();
     assert.equal(response.status, 302);
     assert.match(response.headers.get('location'), /^\/h\/[0-9a-f]+\.jpg$/);
@@ -133,8 +125,8 @@ for (const mode of ['worker', 'pages']) {
     }
   });
 
-  test(mode + ': env lists accept commas, whitespace, wildcards and mixed case', async () => {
-    const api = await start(mode, {
+  test('env lists accept commas, whitespace, wildcards and mixed case', async () => {
+    const api = await start({
       REFERER_ALLOWED_HOSTS: 'Example.COM,\n  *.Trusted.Example   example.com ',
       CORS_ALLOWED_ORIGINS: 'https://Client.Example , http://localhost:4321',
     });
@@ -158,22 +150,22 @@ for (const mode of ['worker', 'pages']) {
     assert.equal((await api.request('/pic?img=h', { Origin: 'https://client.example', Referer: 'https://client.example/page' })).status, 404);
   });
 
-  test(mode + ': booleans switch behaviour and accept 1/0 and true/false', async () => {
-    const strict = await start(mode, { ...TRUSTED_ENV, REFERER_ALLOW_MISSING: '0', REFERER_ALLOW_SAME_ORIGIN: 'false' });
+  test('booleans switch behaviour and accept 1/0 and true/false', async () => {
+    const strict = await start({ ...TRUSTED_ENV, REFERER_ALLOW_MISSING: '0', REFERER_ALLOW_SAME_ORIGIN: 'false' });
     assert.equal((await strict.request()).status, 404);
     assert.equal((await strict.request('/pic?img=h', { Referer: '' })).status, 404);
     assert.equal((await strict.request('/pic?img=h', { Referer: strict.base + '/gallery' })).status, 404);
     assert.equal((await strict.request('/pic?img=h', { Referer: 'https://example.com/' })).status, 302);
 
-    const off = await start(mode, { ...TRUSTED_ENV, REFERER_ENABLED: '0' });
+    const off = await start({ ...TRUSTED_ENV, REFERER_ENABLED: '0' });
     assert.equal((await off.request('/pic?img=h', { Referer: 'bad referer' })).status, 302);
     assert.equal((await off.request('/pic?img=h', { Origin: 'https://outside.example' })).status, 404);
 
-    const noCors = await start(mode, { CORS_ALLOW_SAME_ORIGIN: 'no' });
+    const noCors = await start({ CORS_ALLOW_SAME_ORIGIN: 'no' });
     assert.equal((await noCors.request('/pic?img=h', { Origin: noCors.base })).status, 404);
   });
 
-  test(mode + ': invalid env fails closed with 500 instead of opening up', async context => {
+  test('invalid env fails closed with 500 instead of opening up', async context => {
     const errors = context.mock.method(console, 'error', () => {});
     for (const env of [
       { REFERER_ENABLED: 'maybe' },
@@ -185,7 +177,7 @@ for (const mode of ['worker', 'pages']) {
       { CORS_ALLOWED_ORIGINS: 'null' },
       { PROTECT_ASSET_IMAGES: '2' },
     ]) {
-      const api = await start(mode, env);
+      const api = await start(env);
       const response = await api.request('/pic?img=h', { Referer: 'https://example.com/' });
       assert.equal(response.status, 500, JSON.stringify(env));
       assert.equal(await response.text(), '500 Internal Error');
@@ -194,8 +186,8 @@ for (const mode of ['worker', 'pages']) {
     assert.ok(errors.mock.callCount() >= 8);
   });
 
-  test(mode + ': OPTIONS validates Origin/method/headers without requiring Referer', async () => {
-    const api = await start(mode, { ...TRUSTED_ENV, REFERER_ALLOW_MISSING: '0' });
+  test('OPTIONS validates Origin/method/headers without requiring Referer', async () => {
+    const api = await start({ ...TRUSTED_ENV, REFERER_ALLOW_MISSING: '0' });
     let response = await api.request('/pic?img=h', { Origin: 'https://client.example', 'Access-Control-Request-Method': 'HEAD', 'Access-Control-Request-Headers': 'X-Request-ID, Content-Type' }, 'OPTIONS');
     assert.equal(response.status, 204);
     assert.equal(await response.text(), '');
@@ -207,9 +199,9 @@ for (const mode of ['worker', 'pages']) {
     assert.equal((await api.request('/pic?img=h', { Origin: 'https://client.example', 'Access-Control-Request-Headers': 'invalid header' }, 'OPTIONS')).status, 400);
   });
 
-  test(mode + ': HEAD, methods, categories, UA and no-store redirects', async context => {
+  test('HEAD, methods, categories, UA and no-store redirects', async context => {
     const errors = context.mock.method(console, 'error', () => {});
-    const api = await start(mode, TRUSTED_ENV);
+    const api = await start(TRUSTED_ENV);
     for (const [query, status] of [['h', 302], ['a', 302], ['gif', 302], ['custom', 302], ['empty', 404], ['unknown', 404], ['__proto__', 404], ['', 404]]) {
       for (const method of ['GET', 'HEAD']) {
         const response = await api.request('/pic?img=' + query, { Origin: 'https://client.example' }, method);
@@ -231,7 +223,7 @@ for (const mode of ['worker', 'pages']) {
     assert.equal(await deniedHead.text(), '');
 
     // A runtime failure must still produce the policy headers, not a bare 599.
-    const failure = await start(mode, TRUSTED_ENV);
+    const failure = await start(TRUSTED_ENV);
     const random = context.mock.method(Math, 'random', () => {
       throw new Error('fixture redirect failure');
     });
@@ -245,12 +237,13 @@ for (const mode of ['worker', 'pages']) {
     checkPolicyHeaders(response, 'https://client.example');
     assert.ok(errors.mock.callCount() >= 1);
   });
-}
 
-test('Worker: both API routes, category assets, encoded paths, and public boundary', async context => {
+test('Worker: API route, category assets, encoded paths, and public boundary', async context => {
   const errors = context.mock.method(console, 'error', () => {});
-  const api = await start('worker', TRUSTED_ENV);
-  assert.equal((await api.request('/api/pic?img=h')).status, 302);
+  const api = await start(TRUSTED_ENV);
+  assert.equal((await api.request('/pic?img=h')).status, 302);
+  // /api/pic was an undocumented alias; it must now be treated as a plain path.
+  assert.equal((await api.request('/api/pic?img=h')).status, 200);
   for (const pathname of ['/h/0.jpg', '/a/0.jpeg', '/gif/0.gif', '/custom/0.gif', '/%68/0%2ejpg']) {
     const before = api.assetCalls();
     const denied = await api.request(pathname, { Referer: 'https://outside.example/' });
@@ -263,7 +256,7 @@ test('Worker: both API routes, category assets, encoded paths, and public bounda
     checkPolicyHeaders(allowed, 'https://client.example');
     assert.match(allowed.headers.get('vary'), /Accept-Encoding/);
   }
-  for (const pathname of ['/', '/gallery/', '/settings/', '/counts.json', '/h/meta.json', '/h/index.html', '/icon.svg', '/_next/static/app.js', '/unrelated/image.jpg']) {
+  for (const pathname of ['/', '/gallery/', '/settings/', '/counts.json', '/h/meta.json', '/h/index.html', '/icon.svg', '/static/app.js', '/unrelated/image.jpg']) {
     const response = await api.request(pathname, { Origin: 'https://outside.example', Referer: 'https://outside.example/' });
     assert.equal(response.status, 200, pathname);
     assert.match(response.headers.get('cache-control'), /public/);
@@ -275,18 +268,18 @@ test('Worker: both API routes, category assets, encoded paths, and public bounda
   assert.equal(missing.status, 404);
   checkPolicyHeaders(missing, 'https://client.example');
 
-  const failing = await start('worker', TRUSTED_ENV, { failingAssets: true });
+  const failing = await start(TRUSTED_ENV, { failingAssets: true });
   const failed = await failing.request('/h/0.jpg', { Origin: 'https://client.example' });
   assert.equal(failed.status, 500);
   assert.ok(errors.mock.callCount() >= 1);
 
-  const unprotected = await start('worker', { ...TRUSTED_ENV, PROTECT_ASSET_IMAGES: '0' });
+  const unprotected = await start({ ...TRUSTED_ENV, PROTECT_ASSET_IMAGES: '0' });
   assert.equal((await unprotected.request('/h/0.jpg', { Origin: 'https://outside.example', Referer: 'https://outside.example/' })).status, 200);
   assert.equal((await unprotected.request('/pic?img=h', { Origin: 'https://outside.example' })).status, 404);
 });
 
 test('policy denials are indistinguishable from a missing image', async () => {
-  const api = await start('worker', TRUSTED_ENV);
+  const api = await start(TRUSTED_ENV);
   const missing = await api.request('/pic?img=unknown');
   const deniedReferer = await api.request('/pic?img=h', { Referer: 'https://outside.example/' });
   const deniedOrigin = await api.request('/pic?img=h', { Origin: 'https://outside.example' });
@@ -318,7 +311,7 @@ test('Worker: Content-Type describes the real slot bytes in both policy modes', 
   const mismatched = drift.find(entry => entry.mismatch >= 0);
   assert.ok(mismatched, 'the pool must contain at least one suffix/byte mismatch');
 
-  const api = await start('worker', TRUSTED_ENV);
+  const api = await start(TRUSTED_ENV);
   const mismatchPath = '/' + mismatched.category + '/' + hex(mismatched.mismatch) + mismatched.ext;
   const mismatchCode = SLOT_FORMATS[mismatched.category][mismatched.mismatch];
   let response = await api.request(mismatchPath, { Origin: 'https://client.example' });
@@ -343,7 +336,7 @@ test('Worker: Content-Type describes the real slot bytes in both policy modes', 
 
   // With protection off the cache policy comes from the asset binding, but the
   // Content-Type is still corrected.
-  const unprotected = await start('worker', { ...TRUSTED_ENV, PROTECT_ASSET_IMAGES: '0' });
+  const unprotected = await start({ ...TRUSTED_ENV, PROTECT_ASSET_IMAGES: '0' });
   response = await unprotected.request(mismatchPath, { Referer: 'https://outside.example/' });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type'), MIME[mismatchCode]);

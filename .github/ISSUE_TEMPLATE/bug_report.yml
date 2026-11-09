@@ -42,7 +42,6 @@ body:
       label: Where did it happen?
       options:
         - My own Cloudflare Workers deployment
-        - My own Cloudflare Pages deployment
         - Local development (npm run dev)
         - Other, or not sure
     validations:

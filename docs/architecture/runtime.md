@@ -1,12 +1,12 @@
 # 运行时：Worker 内部
 
-`worker/index.js` 只做路由，`worker/policy.js` 是唯一的策略引擎；两个入口（Workers 与 Pages）共享同一份引擎，因此访问策略只有一处实现（`worker/index.js`、`worker/policy.js`、`worker/pages.js`）。
+`worker/index.js` 只做路由，`worker/policy.js` 是唯一的策略引擎；单入口（Workers）只有一份实现（`worker/index.js`、`worker/policy.js`）。
 
 ## 1. 入口路由
 
 | 条件 | 动作 | 出处 |
 | :--- | :--- | :--- |
-| 路径是 `/pic` 或 `/api/pic` | 交给 `handleRequest`（策略 + 目标解析 + 302） | `worker/index.js` |
+| 路径是 `/pic` | 交给 `handleRequest`（策略 + 目标解析 + 302） | `worker/index.js` |
 | 其余路径 | 先 `resolvePolicy(env)`；出错返回 500 | `worker/index.js` |
 | `parseCategoryImage` 返回 `null` | 原样 `env.ASSETS.fetch(request)`，不加任何头 | `worker/index.js` |
 | `PROTECT_ASSET_IMAGES` 为假 | 取资产，只纠正 `Content-Type` | `worker/index.js` |
@@ -79,10 +79,6 @@ withSlotContentType(...)               // 仅 response.ok 生效
 | `run_worker_first: true`（当前） | 生效 | 生效 | 被 `private, no-store` 覆盖 |
 | 资产优先 | 失效 | 失效 | 生效 |
 
-## 7. Pages 适配器
-
-`worker/pages.js` 的 `onRequest` 只把请求交给 `handleRequest`，因此 Pages 侧只有 `/pic` 语义，没有资产分支，也就没有 MIME 纠正；`/api/pic` 需要单独路由（`worker/pages.js`）。`functions/pic.js` 只有一行 re-export，保证 Workers 与 Pages 用同一份引擎（`functions/pic.js`）。
-
-## 8. 行为锚点
+## 7. 行为锚点
 
 `tests/worker/source-equivalence.test.mjs` 用同一组请求、env 与 `ASSETS` stub 驱动旧生成入口与新 `worker/index.js`，逐条比较状态码、头与体；唯一允许的差异是"某个槽位的真实字节与后缀不符时的 `Content-Type`"，并且这个差异被单独断言（`tests/worker/source-equivalence.test.mjs`）。旧入口从 `HEAD` 上消失后，该用例自动跳过，其余契约由 `tests/backend-contract.test.mjs` 继续覆盖（`tests/worker/source-equivalence.test.mjs`、`.github/workflows/ci.yml`）。

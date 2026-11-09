@@ -25,7 +25,7 @@
 | 清单契约 | `validate_manifest` 拒绝缺字段、负数、无点后缀、多余键、非数值比例 |
 | 空扫描 | 不创建 `assets/generated/`、不创建 `worker/`；只有空目录时 `counts` 里出现 `0` |
 | 时间戳复用 | 输入（图片集合、`--ext`）不变时 `generated_at` 不变 |
-| 陈旧槽位清理 | 只删该分类下的陈旧槽位文件，同级目录与 `assets/static`、手写 `index.js`、`functions/pic.js` 原样保留 |
+| 陈旧槽位清理 | 只删该分类下的陈旧槽位文件，同级目录与 `assets/static`、手写 `worker/index.js`、`worker/policy.js` 原样保留 |
 
 两个门禁测试类：
 
@@ -36,11 +36,11 @@
 
 ## 2. 访问策略测试（`tests/test_access_policy.py`）
 
-读源码文本做静态断言，不启动运行时：所有文档化的 env 名都出现在 `worker/policy.js`，`worker/index.js` 与 `worker/pages.js` 都经由 `./policy.js`，五个运行时源文件里不出现 `ACCESS_POLICY`、`allowedHosts: [`、`srprolin` 等写死的值（`tests/test_access_policy.py`）。另有一条几何约定：`slot_ratios` 每个分类的长度必须等于槽位数，否则画廊会重新出现回流。
+读源码文本做静态断言，不启动运行时：所有文档化的 env 名都出现在 `worker/policy.js`，`worker/index.js` 经由 `./policy.js`，三个运行时源文件里不出现 `ACCESS_POLICY`、`allowedHosts: [`、`srprolin` 等写死的值（`tests/test_access_policy.py`）。另有一条几何约定：`slot_ratios` 每个分类的长度必须等于槽位数，否则画廊会重新出现回流。
 
 ## 3. HTTP 契约测试（`tests/backend-contract.test.mjs`）
 
-用 `node:http` 起真实服务器，把 `worker/index.js`（`fetch(request, env)`）与 `functions/pic.js`（`onRequest(context)`）分别接到同一组 `ASSETS` stub 上，两种模式各跑一遍（`tests/backend-contract.test.mjs`）。
+用 `node:http` 起真实服务器，把 `worker/index.js`（`fetch(request, env)`）接到一组 `ASSETS` stub 上（`tests/backend-contract.test.mjs`）。
 
 重点不是"能返回 200"，而是这些不变量：
 

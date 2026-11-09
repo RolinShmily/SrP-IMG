@@ -44,8 +44,7 @@ the pool keeps the suffix and the response header is corrected instead:
 
 This depends on `assets.run_worker_first = true` (see `wrangler.jsonc`): any
 request that reaches the static assets without passing the Worker keeps the
-suffix-derived header. The Pages adapter has no asset branch, so Pages
-responses are not rewritten either.
+suffix-derived header.
 
 The note about `ext_policy: "source"` still applies: it takes the *first* valid
 source's suffix for the whole category, so it removes the drift only when that

@@ -1,8 +1,8 @@
 """Checks for the runtime access policy and the generated Worker data module.
 
-The allowlist is runtime configuration: it lives in Worker / Pages environment
-variables, so these tests assert that the hand-written runtime never bakes a
-policy in, that both entries read the documented env names, and that
+The allowlist is runtime configuration: it lives in the Worker environment,
+so these tests assert that the hand-written runtime never bakes a policy in,
+that the entry reads the documented env names, and that
 ``worker/targets.js`` still matches the committed manifest.
 Behavioural coverage lives in tests/backend-contract.test.mjs, which drives the
 checked-in handlers with real HTTP requests.
@@ -35,9 +35,7 @@ POLICY_ENV_NAMES = (
 RUNTIME_SOURCES = (
     'worker/index.js',
     'worker/policy.js',
-    'worker/pages.js',
     'worker/targets.js',
-    'functions/pic.js',
 )
 
 
@@ -79,10 +77,9 @@ class RuntimePolicyTests(unittest.TestCase):
         policy = (ROOT / 'worker' / 'policy.js').read_text(encoding='utf-8')
         for env_name in POLICY_ENV_NAMES:
             self.assertIn(env_name, policy, f'worker/policy.js misses {env_name}')
-        # Both entries must route requests through that shared policy engine.
-        for name in ('worker/index.js', 'worker/pages.js'):
-            source = (ROOT / name).read_text(encoding='utf-8')
-            self.assertIn('./policy.js', source, name)
+        # The entry must route requests through that shared policy engine.
+        source = (ROOT / 'worker' / 'index.js').read_text(encoding='utf-8')
+        self.assertIn('./policy.js', source, 'worker/index.js')
 
     def test_no_allowlist_is_embedded(self):
         for name in RUNTIME_SOURCES:
@@ -91,16 +88,6 @@ class RuntimePolicyTests(unittest.TestCase):
             self.assertNotIn('allowedHosts: [', source)
             self.assertNotIn('allowedOrigins: [', source)
             self.assertNotIn('srprolin', source)
-
-    def test_pages_handler_reads_context_env(self):
-        source = (ROOT / 'worker' / 'pages.js').read_text(encoding='utf-8')
-        self.assertIn('handleRequest(context.request, context.env)', source)
-        # Page Functions cannot cross the functions/ root in some bundlers, so
-        # functions/pic.js is only a re-export of this adapter.
-        self.assertIn(
-            "export { onRequest } from '../worker/pages.js';",
-            (ROOT / 'functions' / 'pic.js').read_text(encoding='utf-8'),
-        )
 
     def test_worker_handler_reads_env_binding(self):
         source = (ROOT / 'worker' / 'index.js').read_text(encoding='utf-8')

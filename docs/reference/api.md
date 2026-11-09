@@ -7,12 +7,9 @@
 | 请求路径 | 处理路径 | 出处 |
 | --- | --- | --- |
 | `/pic` | `handleRequest(request, env)` | `worker/index.js` |
-| `/api/pic` | `handleRequest(request, env)`，与 `/pic` 完全同一实现 | `worker/index.js` |
-| `/pic`（Pages Functions 部署时） | `functions/pic.js` → `worker/pages.js::onRequest` | `functions/pic.js` |
 | `/<category>/<hex>.<ext>` | 资产保护分支（`parseCategoryImage` 命中） | `worker/index.js` |
 | 其它路径 | 直接 `env.ASSETS.fetch(request)` | `worker/index.js` |
 
-Pages 适配器只覆盖 `/pic`；`/api/pic` 需要单独的 Pages 路由，静态图片保护需要 Pages middleware 或边缘规则（`worker/pages.js`）。
 
 ## 2. `/pic?img=<key>`
 
@@ -39,8 +36,6 @@ curl -sI 'https://img.example.com/pic?img=h'
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' 'https://img.example.com/pic?img=nope'
 # 404
-curl -s -o /dev/null -w '%{http_code}\n' 'https://img.example.com/api/pic?img=h'
-# 302（与 /pic 同一实现）
 ```
 
 槽位计算为 `Math.floor(Math.random() * slots)`，十六进制左补零到 `HASH_LENGTH`，后缀取 `target.ext || IMAGE_EXT`，目录名经 `encodeURIComponent`（`worker/policy.js`）。
@@ -98,7 +93,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST 'https://img.example.com/pic?im
 
 | 响应头 | 值 | 适用范围 | 出处 |
 | --- | --- | --- | --- |
-| `Vary` | `Origin, Referer`；预检额外加 `Access-Control-Request-Method`、`Access-Control-Request-Headers` | 全部 `/pic`、`/api/pic` 与受保护资产 | `worker/policy.js::responseHeaders` |
 | `Cache-Control` | `private, no-store` | 同上；未受保护直链沿用 `_headers` 的 `public, max-age=31536000, immutable` | `worker/policy.js`、`assets/static/_headers` |
 | `Access-Control-Allow-Origin` | 反射请求的 `Origin`，仅当 `allowedOrigin` 为真 | 同上；无 `Origin` 头时不发 | `worker/policy.js` |
 | `Access-Control-Allow-Methods` | `GET, HEAD, OPTIONS` | 仅 `204` | `worker/policy.js` |
