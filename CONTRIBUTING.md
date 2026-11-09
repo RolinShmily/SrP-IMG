@@ -1,9 +1,5 @@
 # Contributing
 
-<p align="center">
-  <b>English</b> • <a href="./CONTRIBUTING.zh.md">简体中文</a>
-</p>
-
 Thanks for taking the time to contribute. This is a small project — a static
 Vite + React gallery plus a Cloudflare Worker that redirects to random images — so the
 process is deliberately lightweight.

@@ -1,9 +1,5 @@
 # Changelog
 
-<p align="center">
-  <b>English</b> • <a href="./CHANGELOG.zh.md">简体中文</a>
-</p>
-
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -96,6 +92,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screenshots were re-captured after the copy moved from Next.js to Vite + React,
   and `docs/reference/transform-rules.md` is now Chinese and documents when a
   cache purge is required.
+
+* **Single-language policies** — `CHANGELOG`, `CODE_OF_CONDUCT`, `CONTRIBUTING`
+  and `SECURITY` are English-only. The four `.zh.md` copies and their language
+  switchers are gone, and every reference (including the Chinese README) points
+  at the English files.
 
 ## [0.2.1] - 2026-10-27
 

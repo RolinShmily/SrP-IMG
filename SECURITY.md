@@ -1,9 +1,5 @@
 # Security Policy
 
-<p align="center">
-  <b>English</b> • <a href="./SECURITY.zh.md">简体中文</a>
-</p>
-
 ## Supported versions
 
 This project has no tagged releases — only the `main` branch is maintained, and

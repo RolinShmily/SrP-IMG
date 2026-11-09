@@ -2,7 +2,7 @@
 
 ## 提交信息
 
-遵循 Conventional Commits，前缀与现有历史一致，描述用中文（`CONTRIBUTING.md`、`CONTRIBUTING.zh.md`）：
+遵循 Conventional Commits，前缀与现有历史一致，描述用中文（`CONTRIBUTING.md`）：
 
 | 前缀 | 用在 |
 | --- | --- |

@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="CHANGELOG.zh.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.1-blue.svg"></a>
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.1-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://vite.dev"><img alt="Vite 7" src="https://img.shields.io/badge/Vite-7-646CFF.svg"></a>
   <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg"></a>
@@ -264,7 +264,7 @@ npx wrangler secret put REFERER_ALLOWED_HOSTS
 
 被策略拒绝的请求与不存在的图片返回完全相同的响应，配置错误只写日志、不回给调用方，
 因此无法用响应差异反推规则。请求头检查不等于身份认证：该边界以及 Workers / Pages 的差异见
-[SECURITY.zh.md](SECURITY.zh.md)。
+[SECURITY.md](SECURITY.md)（英文）。
 
 无需重新生成仓库图片池，即可运行全部确定性测试（管线、访问策略、HTTP 契约）：
 
@@ -341,10 +341,10 @@ $$
 
 ### 🤝 参与贡献与安全
 
-欢迎参与贡献 —— 本地环境、素材要求与 PR 规范见 [CONTRIBUTING.zh.md](CONTRIBUTING.zh.md)，
-行为准则见 [CODE_OF_CONDUCT.zh.md](CODE_OF_CONDUCT.zh.md)，版本变更记录见 [CHANGELOG.zh.md](CHANGELOG.zh.md)。
+欢迎参与贡献 —— 本地环境、素材要求与 PR 规范见 [CONTRIBUTING.md](CONTRIBUTING.md)（英文），
+行为准则见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)（英文），版本变更记录见 [CHANGELOG.md](CHANGELOG.md)（英文）。
 
-如需报告安全漏洞，请按 [SECURITY.zh.md](SECURITY.zh.md) 私下联系，不要提交公开 Issue。
+如需报告安全漏洞，请按 [SECURITY.md](SECURITY.md)（英文） 私下联系，不要提交公开 Issue。
 
 ---
 
