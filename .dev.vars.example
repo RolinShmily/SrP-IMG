@@ -1,6 +1,7 @@
 # Local bindings for `wrangler dev`. Copy to .dev.vars (gitignored) and fill in.
 #
-# These values are the *runtime* access policy for index.js / functions/pic.js.
+# These values are the *runtime* access policy for worker/policy.js, which
+# backs worker/index.js (Workers) and functions/pic.js (Pages).
 # The deployed bundle contains no allowlist, so production values belong in
 # Cloudflare instead:
 #   npx wrangler secret put REFERER_ALLOWED_HOSTS
