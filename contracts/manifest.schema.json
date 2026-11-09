@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://img.srprolin.com/contracts/manifest.schema.json",
+  "title": "SrP-IMG generated manifest (assets/generated/counts.json)",
+  "description": "The single contract between the build-time pipeline and its consumers: the web gallery reads counts, labels and per-slot ratios; the Worker reads slot counts and extensions. Field order is part of the output contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "categories",
+    "counts",
+    "real_counts",
+    "category_exts",
+    "category_aspects",
+    "slot_ratios",
+    "hash_length",
+    "output_ext",
+    "generated_at"
+  ],
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "name_zh",
+          "name_en",
+          "ext",
+          "count",
+          "slots",
+          "aspect",
+          "aspect_hint"
+        ],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "name_zh": { "type": "string" },
+          "name_en": { "type": "string" },
+          "ext": { "type": "string", "pattern": "^\\.[A-Za-z0-9]+$" },
+          "count": { "type": "integer", "minimum": 0 },
+          "slots": { "type": "integer", "minimum": 0 },
+          "aspect": { "type": ["string", "null"] },
+          "aspect_hint": { "type": "string" }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "real_counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "category_exts": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^\\.[A-Za-z0-9]+$" }
+    },
+    "category_aspects": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] }
+    },
+    "slot_ratios": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 0,
+        "items": { "type": "number", "minimum": 0 }
+      }
+    },
+    "hash_length": { "type": "integer", "minimum": 0 },
+    "output_ext": { "type": "string", "pattern": "^\\.[A-Za-z0-9]+$" },
+    "generated_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T" }
+  }
+}

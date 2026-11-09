@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "categories": {
+    "h": {
+      "label": "horizontal",
+      "name_zh": "横屏壁纸",
+      "name_en": "Landscape",
+      "description": "横屏随机图片",
+      "ext_policy": "default"
+    },
+    "v": {
+      "label": "vertical",
+      "name_zh": "竖屏壁纸",
+      "name_en": "Portrait",
+      "description": "竖屏随机图片",
+      "ext_policy": "default"
+    },
+    "a": {
+      "label": "avatar",
+      "name_zh": "头像素材",
+      "name_en": "Avatar",
+      "description": "头像随机图片",
+      "ext_policy": ".jpeg"
+    },
+    "gif": {
+      "label": "gif",
+      "name_zh": "动态动图",
+      "name_en": "GIF",
+      "description": "GIF 随机动图",
+      "ext_policy": ".gif"
+    }
+  }
+}
