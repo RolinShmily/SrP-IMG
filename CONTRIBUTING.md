@@ -5,7 +5,7 @@
 </p>
 
 Thanks for taking the time to contribute. This is a small project — a static
-Next.js gallery plus a Cloudflare Worker that redirects to random images — so the
+Vite + React gallery plus a Cloudflare Worker that redirects to random images — so the
 process is deliberately lightweight.
 
 ## Ways to help
@@ -25,28 +25,29 @@ cd SrP-IMG
 npm ci --ignore-scripts
 
 # Generate virtual metadata without copying images (fast, recommended for development)
-python gen_img.py --no-copy --hash-length 2
+python -m pipeline --no-copy --hash-length 2
 
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:5173
 npm run lint         # eslint . (flat config in eslint.config.mjs)
-npm run build        # production static export into out/
-npm run typecheck    # tsc --noEmit; the build itself ignores type errors
+npm run build        # production multi-page Vite build into dist/
+npm run typecheck    # tsc --noEmit; vite build does not typecheck
+npm test             # pipeline + access policy + Worker contract + differential matrix
 ```
 
-> `gen_img.py` also rewrites `functions/pic.js` and `index.js` to match the
-> generated hash space. If you change the generator, commit those regenerated
-> files together with it.
+> `pipeline/` also rewrites `worker/targets.js` and `worker/slot_formats.js` to
+> match the generated hash space and the real source formats. If you change the
+> pipeline or `worker/`, commit the regenerated data modules together with it.
 
 ## Adding images or a new category
 
-1. Create `oriImg/<category>/` and drop your images in (compress them below
+1. Create `assets/original/<category>/` and drop your images in (compress them below
    **2 MB**; anything above **5 MB** is skipped by the build).
 2. `h` and `v` always output `.jpg`; other categories keep the extension of the
    first image in the folder.
-3. Add the matching tab in `app/page.tsx` and an entry in the `typeToFolder`
-   map in `components/image-gallery.tsx`.
-4. Run the generator and commit `public/counts.json` plus the regenerated
-   `functions/pic.js` / `index.js`.
+3. Add the matching tab in `src/pages/home.tsx` and an entry in the `typeToFolder`
+   map in `src/components/image-gallery.tsx`.
+4. Run the pipeline and commit `assets/generated/counts.json` plus the regenerated
+   `worker/targets.js` and `worker/slot_formats.js`.
 
 Please only submit images you have the right to distribute — no scraped
 material.

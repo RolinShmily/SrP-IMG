@@ -9,7 +9,8 @@
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
   <a href="CHANGELOG.zh.md"><img alt="Version" src="https://img.shields.io/badge/version-0.2.1-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
-  <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000.svg"></a>
+  <a href="https://vite.dev"><img alt="Vite 7" src="https://img.shields.io/badge/Vite-7-646CFF.svg"></a>
+  <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg"></a>
   <a href="https://workers.cloudflare.com"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-F38020.svg"></a>
 </p>
 
@@ -19,9 +20,9 @@
 
 * **无服务器架构**：托管于 Cloudflare Workers / Pages，无需自建传统服务器，无需数据库。
 * **多分类全自动联动**：支持 `h` (横屏)、`v` (竖屏)、`a` (头像)、`gif` (动图) 以及自定义分类，前端全流程动态感知，后续扩充素材目录无需修改前端代码。
-* **格式自动适配**：`h/v` 统一规范为 `.jpg` 保证通用兼容性，其余分类自动嗅探并保留原图扩展名（如 `.gif`, `.jpeg`, `.png`）。
+* **后缀可预测**：每个分类只对外暴露一个后缀（`h/v` → `.jpg`、`a` → `.jpeg`、`gif` → `.gif`、自定义分类取首个源文件后缀），因此 `/h/<hex>.jpg` 这类地址可预测，规则层也能写成静态表达式。源图仍可能是 PNG/WebP，此时由 Worker 依据 `worker/slot_formats.js` 返回真实媒体类型——详见「后缀策略」与 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
 * **自适应瀑布流画廊**：前端自动根据元数据适配分类数量与比例，支持中英双语切换、深浅主题与 Fancybox 交互预览。
-* **双模式调用**：支持通用 302 服务端重定向（API 模式）与 Cloudflare Transform Rules 边缘重写（无感模式）。
+* **三模式调用**：通用 302 服务端重定向（`/pic?img=…`）、Cloudflare Transform Rules 边缘重写（`/<分类>`）、以及画廊里的直链（`/<分类>/<hex>.<ext>`）并存。
 * **可配置访问策略**：Referer 与 CORS 白名单以运行时环境变量下发，不写进代码，也不提交到仓库。
 
 ---
@@ -29,41 +30,71 @@
 ### 📁 目录结构
 
 ```text
-├── oriImg/                 # [核心] 原始素材目录（按分类子文件夹组织）
-│   ├── h/                  # 横屏图片素材（强转为 .jpg）
-│   ├── v/                  # 竖屏图片素材（强转为 .jpg）
-│   ├── a/                  # 头像图片素材
-│   └── gif/                # 自定义分类（自动保留 .gif 后缀）
-├── public/                 # 静态资源与构建产物目录
-│   ├── counts.json         # 自动生成的全站索引与元数据
-│   └── h/、v/、a/、gif/     # 映射后的十六进制图片集合
+├── assets/
+│   ├── original/           # [核心] 原始素材目录（按分类子文件夹组织）
+│   │   ├── h/              # 横屏图片素材（强转为 .jpg）
+│   │   ├── v/              # 竖屏图片素材（强转为 .jpg）
+│   │   ├── a/              # 头像图片素材
+│   │   └── gif/            # 自定义分类（自动保留 .gif 后缀）
+│   ├── static/             # 手写静态资源（构建时原样落在站点根目录）
+│   │   ├── _headers        # Cloudflare 响应头
+│   │   ├── icon.svg        # 站点图标
+│   │   ├── placeholder.svg # 加载失败占位图
+│   │   └── fonts/          # 自托管的 Geist / Geist Mono latin 子集
+│   ├── generated/          # 构建产物（已忽略）：counts.json + 十六进制槽位
+│   │   └── h/、v/、a/、gif/
+│   └── catalog.json        # 分类标签与后缀的唯一真源
 ├── functions/              # Cloudflare Pages Functions
 │   └── pic.js              # 服务端随机重定向接口（Pages）
-├── app/                    # Next.js App Router
-│   ├── page.tsx            # 首页全景与实时体验
-│   ├── gallery/            # 独立瀑布流画廊页面
-│   ├── settings/           # API 参考（接口与复制格式）
-│   ├── template.tsx        # 客户端路由切换进入过渡容器
-│   └── layout.tsx          # 根布局与元数据配置
-├── components/             # React UI 组件
-│   ├── live-preview.tsx    # 实时原图自适应预览容器（零裁切）
-│   ├── image-gallery.tsx   # 核心瀑布流画廊组件
-│   └── api-panel.tsx       # 接口卡片与 URL / Markdown / HTML 复制
-├── lib/                    # 共享模块与类型化国际化字典
-│   ├── i18n.tsx            # 国际化上下文与全局文案
-│   ├── api-translations.ts # API 指南双语翻译字典
-│   └── gallery-translations.ts # 画廊双语翻译字典
-├── scripts/                # 构建辅助脚本
-│   └── normalize-static-export.mjs # Next 16 静态导出片段路径规范化工具
+├── src/                    # Vite + React 应用源码
+│   ├── main.tsx            # 客户端入口（挂载共享应用）
+│   ├── app.tsx             # 路由、Provider 与路由过渡外壳
+│   ├── pages/              # 路由页面组件
+│   │   ├── home.tsx        # 首页全景与实时体验
+│   │   ├── gallery.tsx     # 独立瀑布流画廊页面
+│   │   └── settings.tsx    # API 参考（接口与复制格式）
+│   ├── components/         # React UI 组件
+│   │   ├── live-preview.tsx    # 实时原图自适应预览容器（零裁切）
+│   │   ├── image-gallery.tsx   # 核心瀑布流画廊组件
+│   │   └── api-panel.tsx       # 接口卡片与 URL / Markdown / HTML 复制
+│   ├── lib/                # 共享模块与类型化国际化字典
+│   │   ├── i18n.tsx        # 国际化上下文与全局文案
+│   │   ├── api-translations.ts # API 指南双语翻译字典
+│   │   └── gallery-translations.ts # 画廊双语翻译字典
+│   └── globals.css         # Tailwind v4 入口、主题变量与自托管字体
+├── pipeline/               # 构建期管线包（唯一写入 assets/generated/counts.json 的地方）
+│   ├── cli.py               # 参数解析与流程编排
+│   ├── catalog.py           # 分类注册表加载（assets/catalog.json）
+│   ├── scan.py              # 目录遍历、体积过滤、分类 meta.json
+│   ├── image_size.py        # 纯头部尺寸探测（JPEG/PNG/GIF/WebP）
+│   ├── pool.py              # 槽位映射、拷贝或占位
+│   ├── manifest.py          # counts.json 写出与 JSON Schema 校验
+│   └── worker_targets.py    # worker/targets.js 数据生成器（无逻辑）
+├── contracts/              # 跨层契约（manifest JSON Schema）
 ├── tests/                  # 自动化回归测试套件
 │   ├── backend-contract.test.mjs   # Worker / Pages 安全与 HTTP 契约测试
-│   ├── static-export.test.mjs      # 静态导出片段路径回归测试
-│   └── test_access_policy.py       # 运行时策略环境变量与生成器检查
-├── gen_img.py              # 构建脚本：素材扫描、哈希映射与元数据生成
+│   ├── worker/source-equivalence.test.mjs # 与 P2 前构建产物的差分级 HTTP 矩阵
+│   ├── pipeline/test_pipeline.py   # 管线行为、槽位命名与清单契约
+│   └── test_access_policy.py       # 运行时策略环境变量与生成数据检查
+├── index.html              # Vite 入口：首页路由
+├── gallery.html            # Vite 入口：画廊路由
+├── settings.html           # Vite 入口：API 路由
+├── vite.config.ts          # 多入口构建、@/ 别名与生成物装配
+├── dist/                   # 构建产物（即 wrangler.jsonc 的 `assets.directory`）
+├── worker/                 # 手写运行时（导入生成的数据）
+│   ├── index.js            # Cloudflare Workers 入口
+│   ├── policy.js           # 访问策略引擎（env、CORS、Referer、响应头）
+│   ├── pages.js            # Cloudflare Pages 适配器
+│   └── targets.js          # 生成的分类数据（请勿手改）
+├── functions/pic.js        # Pages 对 worker/pages.js 的再导出
 ├── .dev.vars.example       # 本地 Worker 环境变量模板（访问策略）
-├── index.js                # Cloudflare Workers 入口
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
-├── docs/screenshots/       # README 预览章节使用的截图
+├── docs/                   # 四套规范 + 产品截图（从 docs/README.md 开始）
+│   ├── architecture/       # 分层、构建期、运行时、数据流、取舍记录
+│   ├── design/             # token、组件、动效、双语与可达性
+│   ├── development/        # 命令、代码风格、测试、协作流程
+│   ├── reference/          # API、配置、生成物、规则层
+│   └── screenshots/        # README 预览章节使用的截图
 ├── README.md               # 英文说明文档
 └── README_zh.md            # 中文说明文档
 ```
@@ -87,14 +118,27 @@
 
 ---
 
+### 📚 文档
+
+四套规范位于 [`docs/`](./docs/README.md)。初次接触请先读
+[`development/README.md`](./docs/development/README.md)，再读
+[`architecture/layers.md`](./docs/architecture/layers.md)。
+
+| 分册 | 回答什么问题 |
+| :--- | :--- |
+| [architecture](./docs/architecture/README.md) | 为什么分四层、每份产物归谁写、哪些顺序是字节契约 |
+| [design](./docs/design/README.md) | 设计 token、组件、动效、双语与可达性 |
+| [development](./docs/development/README.md) | 命令、代码风格、四套测试、PR/CI/发布 |
+| [reference](./docs/reference/README.md) | API 契约、配置项、生成物、边缘重写 |
+
 ### 🚀 部署指南
 
 #### 1. 素材准备
 
-在根目录 `oriImg/` 下创建分类文件夹：
+在根目录 `assets/original/` 下创建分类文件夹：
 
 * **预设分类**：`a/`（头像）、`gif/`（动图）、`h/`（横屏）与 `v/`（竖屏）。其中 `h` 与 `v` 输出时会统一固定为 `.jpg`，确保兼容所有 API 客户端。
-* **自定义分类**：创建如 `oriImg/wallpaper/` 或 `oriImg/anime/` 等任意目录。脚本会自动取该目录首张图片的后缀作为该分类的输出后缀。
+* **自定义分类**：创建如 `assets/original/wallpaper/` 或 `assets/original/anime/` 等任意目录。脚本会自动取该目录首张图片的后缀作为该分类的输出后缀。
 
 #### 2. 构建与部署命令
 
@@ -102,13 +146,15 @@
 
 | 命令 | 说明 |
 | :--- | :--- |
-| `npm run gen` | 执行素材哈希扩散与接口入口生成 (`python gen_img.py --hash-length 2`) |
-| `npm run build:all` | 一键完成预构建与 Next.js 静态打包 (`npm run gen && npm run build`) |
+| `npm run gen` | 执行素材哈希扩散与数据模块生成 (`python -m pipeline --hash-length 2`) |
+| `npm run build:all` | 一键完成预构建与 Vite 生产打包 (`npm run gen && npm run build`) |
 | `npm run deploy` | 执行 Wrangler 部署至 Cloudflare Worker (`wrangler deploy`) |
-| `npm run dev` | 启动本地 Next.js 开发调试服务 |
-| `npm run build` | 执行 Next.js 静态编译与导出 (`out/`) |
+| `npm run dev` | 启动本地 Vite 开发服务（支持 `/gallery` 这类干净 URL） |
+| `npm run build` | 执行 Vite 多入口生产构建并输出到 `dist/` |
+| `npm run preview` | 本地预览构建后的 `dist/` 产物 |
+| `npm test` | 运行管线、访问策略与 Worker 契约三套测试，以及一次性的差分矩阵（旧入口消失后自动 skip） |
 
-`npm run build` 还会修正 Next.js 16 在 Windows 上导出的路由片段文件名，保证静态部署的路由预取请求正常；Linux 导出保持原样。
+构建会产出三个 HTML 入口（`index.html`、`gallery.html`、`settings.html`），它们挂载同一个 React 应用，由 React Router 在客户端解析路径。`dist/` 与 `wrangler.jsonc` 中的 `assets.directory` 一致，不再包含框架专属前缀。`vite.config.ts` 同时把 `assets/generated/` 挂到站点根目录：开发服务器直接从该目录响应 `/counts.json` 与 `/<category>/<hex>.<ext>`，构建时再整体拷入 `dist/`。
 
 #### 3. 本地测试
 
@@ -116,19 +162,19 @@
 
 ```bash
 # 使用 --no-copy 快速生成虚拟元数据进行测试（不复制实际图片）
-python gen_img.py --no-copy --hash-length 2
+python -m pipeline --no-copy --hash-length 2
 npm run dev
 ```
 
-要在 Cloudflare 运行时验证随机接口与访问策略，请先执行 `npm run build`，再运行 `npx wrangler dev --local`，打开 Wrangler 显示的地址。Windows 下重新构建前需停止该本地 Wrangler 进程，因为它会占用 `out/` 目录。仅运行 Next.js 开发服务不会执行 Worker。
+要在 Cloudflare 运行时验证随机接口与访问策略，请先执行 `npm run build`，再运行 `npx wrangler dev --local`，打开 Wrangler 显示的地址。Windows 下重新构建前需停止该本地 Wrangler 进程，因为它会占用 `dist/` 目录。仅运行 Vite 开发服务不会执行 Worker。
 
 #### 4. Cloudflare Pages / Workers 生产构建
 
 在 Cloudflare Pages 仪表板配置如下：
 
-* **框架预设**：`Next.js`
-* **构建命令**：`npm run build:all`（或 `python3 gen_img.py --hash-length 2 && npm run build`）
-* **输出目录**：`out`
+* **框架预设**：`Vite`
+* **构建命令**：`npm run build:all`（或 `python3 -m pipeline --hash-length 2 && npm run build`）
+* **输出目录**：`dist`
 * **环境变量**：确保 Python 环境为 3.8+
 
 如果使用 **Cloudflare Workers**，配置根目录的 `wrangler.jsonc`：
@@ -136,11 +182,11 @@ npm run dev
 ```jsonc
 {
   "name": "srp-img-worker",
-  "main": "index.js",
+  "main": "worker/index.js",
   "compatibility_date": "2026-01-05",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "directory": "./out",
+    "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": true
   }
@@ -156,7 +202,7 @@ npm run dev
 
 #### 方式 A：服务端 API (JS 重定向)
 
-由生成的 `functions/pic.js`（Pages：`/pic`）或 `index.js`（Workers：`/pic` 与 `/api/pic`）提供支持；外部网页引用前请配置下文的访问策略：
+由 `worker/pages.js`（Pages：`/pic`，经 `functions/pic.js` 再导出）或 `worker/index.js`（Workers：`/pic` 与 `/api/pic`）提供支持；外部网页引用前请配置下文的访问策略：
 
 | 功能描述 | 调用地址 | 返回结果 |
 | :--- | :--- | :--- |
@@ -166,70 +212,45 @@ npm run dev
 | **随机竖图** | `/pic?img=v` | 302 重定向至 `/v/xxx.jpg` |
 | **UA 智能分流** | `/pic?img=ua` | 手机端返回竖图，电脑端返回横图 |
 
-> **自定义分类支持**：用户在 `oriImg/<自定义分类名>`（例如 `oriImg/wallpaper`）放置图片后，预构建会自动支持 `?img=<自定义分类名>`，无需手动修改重定向逻辑代码。
+> **自定义分类支持**：用户在 `assets/original/<自定义分类名>`（例如 `assets/original/wallpaper`）放置图片后，预构建会自动支持 `?img=<自定义分类名>`，无需手动修改重定向逻辑代码。
 
 #### 方式 B：前端可视化画廊
 
 访问部署后的根域名（如 `https://your-domain.pages.dev`）：
 
 * **自动适配**：顶部导航会自动切换 `h`、`v`、`gif` 等分类。
-* **瀑布流展示**：基于 Next.js 的高性能瀑布流动态加载。
+* **瀑布流展示**：基于 React 的高性能瀑布流动态加载。
 * **沉浸式预览**：集成 Fancybox，支持缩放、旋转、全屏及一键下载。
 
 #### 方式 C：URL 重写 (无感随机)
 
-需在 Cloudflare 仪表板手动配置 **Transform Rules**（*请将下列表达式中的 `<your-domain>` 替换为实际域名*）：
+可选配置 **Transform Rules**，让 `/<分类>` 直接返回随机槽位，不产生跳转。它与 Worker API
+（`/pic?img=…`）、画廊里的直链（`/<分类>/<hex>.<ext>`）**三种入口并存**，最终落到同一份资产，
+访问策略与 `Content-Type` 纠正完全一致。
 
-**规则一：横竖屏分类 (`h` / `v`)**
+为每个分类建一条 **Rewrite URL** 规则（*将 `<your-domain>` 替换为实际域名*）。匹配条件必须是
+**精确路径形状**：`starts_with` 会连 `/assets/…` 一起匹配，而按扩展名写的终止条件会把整个 zone
+锁死为单一后缀。两处坑的详细说明见 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
 
-1. **匹配表达式**：
+| 分类 | 匹配表达式 | 路径重写 (Dynamic) |
+| :--- | :--- | :--- |
+| `h` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/h/?$")` | `concat("/h/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
+| `v` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/v/?$")` | `concat("/v/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")` |
+| `a` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/a/?$")` | `concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")` |
+| `gif` | `(http.host eq "<your-domain>" and http.request.uri.path matches "^/gif/?$")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
-```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/h") and not ends_with(http.request.uri.path, ".jpg")) or (http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/v") and not ends_with(http.request.uri.path, ".jpg"))
-```
-
-2. **路径重写至 (Dynamic)**：
-
-```text
-concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpg")
-```
-
-**规则二：头像分类 (`a`)**
-
-1. **匹配表达式**：
-
-```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/a") and not ends_with(http.request.uri.path, ".jpeg"))
-```
-
-2. **路径重写至 (Dynamic)**：
-
-```text
-concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
-```
-
-**规则三：GIF 分类 (`gif`)**
-
-1. **匹配表达式**：
-
-```text
-(http.host eq "<your-domain>" and starts_with(http.request.uri.path, "/gif") and not ends_with(http.request.uri.path, ".gif"))
-```
-
-2. **路径重写至 (Dynamic)**：
-
-```text
-concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
-```
-
-> **注意**：如果构建命令中 `--hash-length` 值为 `3`，则此处 `cf.random_seed` 截取长度右边界也需从 `2` 改为 `3`。
-> 访问示例：`https://your-domain.pages.dev/h`
+> **注意**
+> * 重写表达式里的后缀必须与 `assets/catalog.json` 中该分类的 `ext_policy` 一致。
+> * `substring` 的截取长度必须与 `--hash-length` 一致（`2` → `0, 2`，即 256 个槽位）。
+> * 必须保持 `assets.run_worker_first: true`——重写后的请求仍会经过 Worker，由它执行访问策略并纠正 `Content-Type`。
+> * 重写后 `/h` 变成 `/h/ab.jpg`，不再匹配 `^/h/?$`，因此不会递归；浏览器地址栏仍是 `/h`。
+> * 访问示例：`https://your-domain.pages.dev/h`
 
 ---
 
 ### 🛡️ 访问策略
 
-白名单是运行时配置，不是构建输入。`index.js` 与 `functions/pic.js` 生成时不包含任何域名，
+白名单是运行时配置，不是构建输入。`worker/policy.js` 是手写源码，不包含任何域名，
 请求到来时才从 Worker / Pages 的环境变量读取。因此仓库、构建产物与已部署的 bundle 里都不会
 出现你的域名。照常部署，然后写入变量即可——Cloudflare 加密保存，下一次请求立即生效，无需重建：
 
@@ -245,27 +266,32 @@ npx wrangler secret put REFERER_ALLOWED_HOSTS
 因此无法用响应差异反推规则。请求头检查不等于身份认证：该边界以及 Workers / Pages 的差异见
 [SECURITY.zh.md](SECURITY.zh.md)。
 
-无需安装依赖或覆盖仓库图片池，即可运行后端契约测试：
+无需重新生成仓库图片池，即可运行全部确定性测试（管线、访问策略、HTTP 契约）：
 
 ```bash
+npm test
+# 或逐个运行
 node --test tests/backend-contract.test.mjs
-python -m unittest discover -s tests -p test_access_policy.py -v
+node --test tests/worker/source-equivalence.test.mjs
+python tests/pipeline/test_pipeline.py
+python tests/test_access_policy.py
 ```
 
 ---
 
 ### ⚙️ 技术参数细节
 
-#### 关于 `gen_img.py`
+#### 关于 `pipeline/`
 
-脚本执行时会进行以下操作：
+以 `python -m pipeline` 执行时会进行以下操作：
 
 1. **哈希扩散**：通过 `--hash-length` 指定随机空间。若设为 `3`，每个分类会生成 $16^3 = 4096$ 个访问路径。
 2. **后缀策略**：
-   * 扫描 `oriImg` 下的所有子目录。
+   * 扫描 `assets/original` 下的所有子目录。
    * 若目录名为 `h` 或 `v`，输出后缀强制遵循命令行参数（默认 `.jpg`）。
    * 否则，自动探测该目录首张图片的后缀并保留。
 3. **元数据导出**：生成 `counts.json`，记录每个分类的图片总数 (`counts`) 和对应后缀 (`category_exts`)。
+4. **字节格式校验**：后缀是路由约定，而非编码承诺。`h`/`v`/`a` 里的 PNG 或 WebP 源文件会被原样拷进 `.jpg`/`.jpeg` 槽位，于是后缀与真实字节不符（`a` 56/114、`h` 43/138、`v` 7/67）。改槽位后缀就会改 URL，所以图片池保留后缀：管线把每个槽位的格式编码写入 `worker/slot_formats.js`，Worker 再按该表覆写图片响应的 `Content-Type`（受保护与未受保护两条分支都覆盖，例如 `/a/01.jpeg` 的真实字节是 WebP，响应即为 `image/webp`）。该机制依赖 `assets.run_worker_first: true`；绕过 Worker 的请求（包括没有静态资产分支的 Pages 适配器）仍会拿到由后缀推导的头。每次运行都会为受影响的分类各打印一行提示，`--strict-formats` 在写出任何产物之前以退出码 1 中止，测试还会锁死真实错配数量，避免修复悄悄失效。把某分类的 `ext_policy` 改成 `"source"` 只会取整类首张源文件的后缀，因此仅对后缀同质的分类（`gif`）能真正消除错配；而且会改变该分类的 URL 并需要重跑图片池。若要让落盘文件本身也诚实，只能转码源图或改成逐槽位后缀（即改 URL），本次未做。
 
 ---
 
@@ -275,7 +301,7 @@ python -m unittest discover -s tests -p test_access_policy.py -v
 
 #### 1. 文件体积限制
 
-* **5MB 阈值**：构建脚本 `gen_img.py` 会在扫描阶段检查每个源文件。
+* **5MB 阈值**：`python -m pipeline` 会在扫描阶段检查每个源文件。
 * **策略**：任何单文件体积超过 **5MB** 的图片将被直接忽略，不会被拷贝，也不会参与哈希迭代。
 * **原因**：防止超大 GIF 或高清素材在指数级迭代（如 $16^3 = 4096$ 倍）后瞬间耗尽磁盘空间。
 
@@ -297,7 +323,7 @@ $$
 
 #### 3. 最佳实践建议
 
-* **预先压缩**：建议在放入 `oriImg` 之前，使用批量压缩工具（如 [Caesium Image Compressor](https://saerasoft.com/caesium/) 或 TinyPNG、FFmpeg）将素材压缩至 2MB 以内。
+* **预先压缩**：建议在放入 `assets/original` 之前，使用批量压缩工具（如 [Caesium Image Compressor](https://saerasoft.com/caesium/) 或 TinyPNG、FFmpeg）将素材压缩至 2MB 以内。
 * **动态调整**：如果素材库较大，可将 `--hash-length` 设为 `2`（每个分类生成 256 张），以确保平台构建顺利。
 * **查看日志**：在构建日志中，脚本会明确输出：`[分类名] 忽略了 X 个超过 5.0MB 的文件`。
 
@@ -307,7 +333,7 @@ $$
 
 前端画廊、首页和配置面板均由构建生成的 `counts.json` 动态驱动。若需增加新分类，仅需：
 
-1. 在 `oriImg/` 新建对应分类文件夹并放入图片素材。
+1. 在 `assets/original/` 新建对应分类文件夹并放入图片素材。
 2. 执行构建（`npm run build:all`）或提交代码触发自动部署。
 3. 构建脚本会自动嗅探真实尺寸、后缀并同步生成元数据，前端全站自动展现新分类，**无需修改任何前端代码**。
 
@@ -329,14 +355,14 @@ $$
 #### 图源与版权说明
 
 **本仓库的 MIT 协议仅覆盖源代码**（`.ts` / `.tsx` / `.js` / `.py` 及配置文件等），
-**不覆盖 `oriImg/` 目录以及构建产物中的任何图片资源**。
+**不覆盖 `assets/original/` 目录以及构建产物中的任何图片资源**。
 
-* `oriImg/` 下的图片均收集自互联网，版权归**各自原作者**所有，仅用于个人学习、功能演示与技术验证。
+* `assets/original/` 下的图片均收集自互联网，版权归**各自原作者**所有，仅用于个人学习、功能演示与技术验证。
 * 本仓库不对这些图片主张任何权利，也未获得原作者的明确授权。
 * 由于本仓库并不持有这些图片的著作权，因此 MIT 协议**不会、也无法**向任何人授予这些图片的使用权。如需用于商业用途或公开分发，请自行向原作者取得授权。
 * 如果你是某张图片的版权方且不希望它出现在此仓库，请提交 [Issue](https://github.com/RolinShmily/SrP-IMG/issues) 告知，确认后我会尽快移除。
 
-> **给部署者的建议**：请将 `oriImg/` 替换为你自有的图片，或已确认授权条款的图源（如 Unsplash、Pexels、Pixabay），并遵守其各自的授权要求。
+> **给部署者的建议**：请将 `assets/original/` 替换为你自有的图片，或已确认授权条款的图源（如 Unsplash、Pexels、Pixabay），并遵守其各自的授权要求。
 
 #### 灵感来源与致谢
 

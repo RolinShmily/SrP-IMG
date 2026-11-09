@@ -43,7 +43,7 @@ is live and credit you if you asked for it.
 
 * The redirect endpoints (`/pic`, `/api/pic`) and their handling of user input.
 * The static gallery frontend (`app/`, `components/`).
-* The build pipeline (`gen_img.py`) and the deploy workflow in `.github/workflows/`.
+* The build pipeline (`pipeline/`, run as `python -m pipeline`) and the deploy workflow in `.github/workflows/`.
 * Exposed secrets or credentials in the repository or its history.
 * Dependency vulnerabilities that are actually reachable in this codebase.
 
@@ -79,7 +79,7 @@ matching rules, and cache boundaries.
 * **Image copyright / licensing complaints** — these are not security issues; see the License section of the [README](./README.md#-license).
 * **Abuse of the public API** through omitted/forged headers or high request volume. The endpoint remains unauthenticated and serves non-sensitive images by design; violations of its configured header policy are in scope as described above.
 * **Missing hardening on the operator's own domain** — HSTS, WAF rules, rate limiting and similar are configured at the Cloudflare account level, not in this repository.
-* Vulnerabilities in Cloudflare's platform, Next.js, or other upstream dependencies themselves — report those upstream.
+* Vulnerabilities in Cloudflare's platform, Vite, React, or other upstream dependencies themselves — report those upstream.
 * Findings that require a compromised device, a malicious browser extension, or physical access.
 * Automated scanner output with no demonstrated impact.
 

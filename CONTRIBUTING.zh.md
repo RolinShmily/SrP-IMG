@@ -4,7 +4,7 @@
   <a href="./CONTRIBUTING.md">English</a> • <b>简体中文</b>
 </p>
 
-感谢你愿意为本项目出力。这是一个小项目 —— 一个静态 Next.js 画廊加上一个负责随机跳转的
+感谢你愿意为本项目出力。这是一个小项目 —— 一个静态 Vite + React 画廊加上一个负责随机跳转的
 Cloudflare Worker —— 因此流程刻意保持轻量。
 
 ## 可以怎么参与
@@ -24,24 +24,26 @@ cd SrP-IMG
 npm ci --ignore-scripts
 
 # 只生成虚拟元数据、不拷贝图片（开发时推荐，速度快）
-python gen_img.py --no-copy --hash-length 2
+python -m pipeline --no-copy --hash-length 2
 
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:5173
 npm run lint         # eslint .（flat config 位于 eslint.config.mjs）
-npm run build        # 静态导出到 out/
-npm run typecheck    # tsc --noEmit；构建本身会忽略类型错误
+npm run build        # Vite 多入口生产构建，输出到 dist/
+npm run typecheck    # tsc --noEmit；vite build 不做类型检查
+npm test             # 管线 + 访问策略 + Worker 契约 + 差分矩阵
 ```
 
-> `gen_img.py` 会同步重写 `functions/pic.js` 与 `index.js`，使其与生成的哈希空间一致。
-> 若你修改了生成脚本，请连同重新生成的产物一起提交。
+> `pipeline/` 会同步重写 `worker/targets.js` 与 `worker/slot_formats.js`，使它们与生成的
+> 哈希空间及源文件真实格式一致。若你修改了管线或 `worker/`，请连同重新生成的数据模块一起提交。
 
 ## 新增图片或分类
 
-1. 新建 `oriImg/<分类>/` 并放入图片（建议压缩到 **2MB** 以内；超过 **5MB** 的文件会被构建跳过）。
+1. 新建 `assets/original/<分类>/` 并放入图片（建议压缩到 **2MB** 以内；超过 **5MB** 的文件会被构建跳过）。
 2. `h`、`v` 固定输出 `.jpg`，其他分类沿用该目录首张图片的后缀。
-3. 在 `app/page.tsx` 增加对应切换按钮，并在 `components/image-gallery.tsx` 的
+3. 在 `src/pages/home.tsx` 增加对应切换按钮，并在 `src/components/image-gallery.tsx` 的
    `typeToFolder` 映射表中增加条目。
-4. 运行生成脚本，提交 `public/counts.json` 以及重新生成的 `functions/pic.js` / `index.js`。
+4. 运行管线，提交 `assets/generated/counts.json` 以及重新生成的 `worker/targets.js`
+   与 `worker/slot_formats.js`。
 
 请只提交你有权分发的图片，不要提交抓取来的素材。
 

@@ -11,7 +11,70 @@
 
 ## [Unreleased]
 
-暂无。
+### 变更
+
+* **前端迁移至 Vite + React** —— 将 Next.js 静态导出替换为 Vite 7 多入口构建
+  （`index.html`、`gallery.html`、`settings.html`），三个入口挂载同一个 React Router SPA。
+  `dist/` 是 Cloudflare Workers 的静态资产目录；字体改为自托管，画廊分类状态由
+  `setSearchParams` 驱动，并移除了仅客户端可用的 `useLinkStatus` 加载指示。用户可见行为不变。
+
+### 内部
+
+* **构建管线拆包** —— 将 900 行的 `gen_img.py` 拆成 `pipeline/` 包（`config`、
+  `catalog`、`scan`、`image_size`、`pool`、`manifest`、`cli`），分类注册表外置为
+  `assets/catalog.json`，生成清单固化到 `contracts/manifest.schema.json`，并新增
+  `tests/pipeline/`。所有产物与重构前逐字节一致。
+
+* **Worker 运行时改为手写源码** —— 访问策略引擎与两个入口不再由 Python f-string 生成，
+  而是位于 `worker/`（`index.js`、`policy.js`、`pages.js`）。`python -m pipeline` 只生成
+  数据模块 `worker/targets.js`；删除 `gen_img.py`、`.nojekyll`、根目录 `index.js` 与
+  `pipeline/worker_codegen.py`，`functions/pic.js` 改为 Pages 适配器的再导出。HTTP 行为
+  由针对旧生成物的差分级矩阵锁定。
+
+* **目录归位：生成物移出源码树** —— `oriImg/` 迁至 `assets/original/`，手写静态资源
+  （`_headers`、`icon.svg`、`placeholder.svg`、`fonts/`）迁至 `assets/static/`（作为 Vite 的
+  `publicDir`），生成图片池（`<分类>/<hex>.<后缀>` 与 `counts.json`）迁至
+  `assets/generated/`（除清单外仍被 git 忽略）。Vite 构建时把图片池装配进 `dist/`
+  （即新的 `assets.directory`），开发期则由一个中间件以同样的扁平 URL
+  （`/counts.json`、`/h/00.jpg`）从 `assets/generated/` 直接响应，运行时路径不会出现
+  `generated/` 段。`npm test` 串联四套测试，CI 以此作为门禁。
+
+* **后缀/字节格式校验** —— 新增 `pipeline/formats.py`，只读文件头识别
+  JPEG/PNG/GIF/WebP（仅标准库）。每次运行会为"有效源文件真实字节与槽位后缀不符"
+  的分类各打印一行（`h`/`v` → `.jpg`、`a` → `.jpeg`），因为 Cloudflare 的
+  `Content-Type` 取自后缀而不是字节。`python -m pipeline --strict-formats` 会在
+  仅扫描、不写盘的前置检查阶段以退出码 1 中止。未改变任何槽位名、生成字节或 URL，
+  也未修改 `assets/catalog.json`。
+
+* **运行时 `Content-Type` 纠正** —— 图片池仍保留由后缀构成的 URL，但响应头不再
+  与真实字节矛盾：管线把每个槽位的格式编码写入新的生成物
+  `worker/slot_formats.js`，`worker/index.js` 再按该表为分类图片覆写
+  `Content-Type`（受保护与未受保护两条分支都覆盖，例如真实字节为 WebP 的
+  `/a/01.jpeg` 会以 `image/webp` 返回）。未改变任何槽位名、槽位字节、URL、
+  `targets.js` 或 `counts.json`；差分级矩阵只对错配槽位排除这一个响应头，并
+  显式断言其新值。CI 同步检查扩展到 `slot_formats.js`，`tests/pipeline/` 还锁死
+  真实错配数量（`a` 125、`h` 81、`v` 28、`gif` 0 个槽位），避免修复悄悄失效。
+
+* **边缘重写文档** —— 新增 `docs/transform-rules.md`，说明三种并存的入口（规则层重写、
+  Worker API、画廊直链），并替换旧的规则表达式：旧写法用 `starts_with("/a")` 匹配，
+  会连 `/assets/…` 一起改写从而打断站点 bundle；且以扩展名作为终止条件，把所有分类
+  锁死为单一后缀。现在统一改为精确路径形状（`^/h/?$`），与后缀无关且不会递归。
+
+* **交付细节** —— `assets/static/_headers` 现在为内容哈希的 Vite 产物（`/assets/*`）
+  与自托管字体（`/fonts/*`）加上一年缓存，此前这两类每次访问都要回源验证。真实树的错配
+  门禁从"精确相等"改为**不增长基线**：新增同格式分类不再需要改测试，而任何增量仍然会
+  失败；`worker/targets.js` 改为从 `counts.json` 重新推导校验，不再钉死 sha256。
+  两个 README 补上 `npm test`，PR 清单列全三个生成数据文件，`.dev.vars.example`
+  改为指向 `worker/`。
+
+* **架构说明** —— 新增 `ARCHITECTURE.md`，记录四层结构、所有权矩阵、三种运行时入口，
+  以及构建所依赖的不变量。
+
+* **文档分册** —— `docs/` 现为四套规范（`architecture`、`design`、`development`、
+  `reference`）加产品截图，入口是 `docs/README.md`。内容覆盖四层所有权与字节契约、
+  重构背后的 ADR、设计 token 与组件/动效规则、四套测试与 PR/CI/发布流程，以及
+  API/配置/生成物契约。首页与移动端预览截图按 "Next.js" → "Vite + React" 的文案变更
+  重拍；`docs/reference/transform-rules.md` 已改为中文并补充了需要清理缓存的场景。
 
 ## [0.2.1] - 2026-10-27
 
