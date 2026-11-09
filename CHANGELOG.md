@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet — see [0.3.0](#030---2026-11-09) for the current release.
+
+## [0.3.0] - 2026-11-09
+
 ### Changed
 
 * **Vite + React frontend** — Replaced the Next.js static export with a Vite 7
@@ -205,7 +209,8 @@ everything that shipped before the tag.
 * The 5MB per-file build limit prevents oversized assets from exhausting CI disk space
   during hash expansion. See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RolinShmily/SrP-IMG/releases/tag/v0.1.0
