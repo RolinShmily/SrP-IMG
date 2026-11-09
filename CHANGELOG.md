@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — see [0.3.0](#030---2026-11-09) for the current release.
+Nothing yet — see [0.3.1](#031---2026-11-09) for the current release.
+
+## [0.3.1] - 2026-11-09
+
+* **Single runtime surface** — Dropped the undocumented `/api/pic` alias and the
+  Cloudflare Pages adapter (`functions/pic.js`, `worker/pages.js`). The Worker
+  answers `/pic` only; the contract suite no longer runs a Pages variant, and the
+  docs, README, SECURITY and `.dev.vars.example` describe one deployment shape.
+  `/api/pic` was the last path that a `starts_with("/a")` rule could break.
 
 ## [0.3.0] - 2026-11-09
 
@@ -113,12 +121,6 @@ Nothing yet — see [0.3.0](#030---2026-11-09) for the current release.
   swallow the SPA bundle. `/static/*` also lost its year-long `immutable`
   header: `_headers` matches by path only, so it pinned a transient 404.
 
-* **Single runtime surface** — Dropped the undocumented `/api/pic` alias and the
-  Cloudflare Pages adapter (`functions/pic.js`, `worker/pages.js`). The Worker
-  answers `/pic` only; the contract suite no longer runs a Pages variant, and the
-  docs, README, SECURITY and `.dev.vars.example` describe one deployment shape.
-  `/api/pic` was the last path that a `starts_with("/a")` rule could break.
-
 ## [0.2.1] - 2026-10-27
 
 ### Changed
@@ -215,7 +217,8 @@ everything that shipped before the tag.
 * The 5MB per-file build limit prevents oversized assets from exhausting CI disk space
   during hash expansion. See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/RolinShmily/SrP-IMG/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/RolinShmily/SrP-IMG/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/RolinShmily/SrP-IMG/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RolinShmily/SrP-IMG/compare/v0.1.0...v0.2.0

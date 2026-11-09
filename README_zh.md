@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
   <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.3.0-blue.svg"></a>
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/badge/version-0.3.1-blue.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://vite.dev"><img alt="Vite 7" src="https://img.shields.io/badge/Vite-7-646CFF.svg"></a>
   <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg"></a>
@@ -82,6 +82,7 @@
 ├── worker/                 # 手写运行时（导入生成的数据）
 │   ├── index.js            # Cloudflare Workers 入口
 │   ├── policy.js           # 访问策略引擎（env、CORS、Referer、响应头）
+│   ├── slot_formats.js     # 生成的逐槽位媒体类型（请勿手改）
 │   └── targets.js          # 生成的分类数据（请勿手改）
 ├── .dev.vars.example       # 本地 Worker 环境变量模板（访问策略）
 ├── wrangler.jsonc          # Cloudflare Workers 配置文件
