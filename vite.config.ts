@@ -106,6 +106,10 @@ export default defineConfig({
   build: {
     // Cloudflare Workers assets are uploaded from ./dist (see wrangler.jsonc).
     outDir: "dist",
+    // Hashed bundle lives under /static, not /assets: category rewrite rules use
+    // single-letter prefixes (`/a`), and `starts_with("/a")` would also swallow
+    // /assets/… — which blanks the SPA. /static collides with nothing.
+    assetsDir: "static",
     emptyOutDir: true,
     rollupOptions: {
       input: {

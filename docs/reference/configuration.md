@@ -88,8 +88,8 @@ catalog 里没有的目录不会报错：`pipeline/catalog.py::unknown_spec` 用
 | 匹配 | 头 | 出处 |
 | --- | --- | --- |
 | `/h/*`、`/v/*`、`/a/*`、`/gif/*` | `Cache-Control: public, max-age=31536000, immutable` | `assets/static/_headers` |
-| `/assets/*` | 同上（内容哈希的 Vite bundle） | 同上 |
 | `/fonts/*` | 同上（文件名稳定，改字体要改名） | 同上 |
+| Vite bundle `/static/*` | **刻意不设**长缓存：`_headers` 只按路径匹配，`immutable` 会把瞬时 404 钉住一年（`vite.config.ts` 的 `assetsDir`） | `assets/static/_headers` |
 | `/counts.json` | `Cache-Control: public, max-age=0, must-revalidate` | 同上 |
 | `/*` | `X-Content-Type-Options: nosniff` | 同上 |
 

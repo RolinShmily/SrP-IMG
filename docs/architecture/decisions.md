@@ -52,14 +52,15 @@
 
 `ext_policy: "source"` 不是这个问题的解：它只取第一个有效源文件的后缀套给整个分类，只有当分类本身后缀同质时才消除漂移（`gif` 是），混分类上只是把漂移换个方向，代价是所有槽位换 URL 并重生成池（`pipeline/catalog.py`、`pipeline/README.md`）。
 
-## ADR-6 规则层用路径形状 `^/h/?$`，不用扩展名终止条件
+## ADR-6 规则层用 `eq` 精确匹配，不用扩展名终止条件
 
 | 项 | 内容 |
 | :--- | :--- |
 | 背景 | 早期重写规则用 `starts_with(path, "/a")` 判分类、用 `not ends_with(path, ".jpg")` 终止（`docs/reference/transform-rules.md`） |
-| 决定 | 匹配 `http.request.uri.path matches "^/<category>/?$"`，重写为 `concat("/<category>/", substring(uuidv4(cf.random_seed), 0, 2), "<ext>")`（`docs/reference/transform-rules.md`） |
+| 决定 | 匹配 `http.request.uri.path eq "/<category>"`，重写为 `concat("/<category>/", substring(uuidv4(cf.random_seed), 0, 2), "<ext>")`；并把 Vite 产物目录从 `/assets` 改到 `/static`（`vite.config.ts`、`docs/reference/transform-rules.md`） |
 | 被否掉 A | 扩展名终止：一旦分类用 `.gif`/`.jpeg`，重写结果不再以 `.jpg` 结尾，规则会二次触发，把 `/gif/0a.gif` 变成 `/gif/0a.gif/3f.jpg`；这等于强迫所有分类共用一个后缀（`docs/reference/transform-rules.md`） |
-| 被否掉 B | `starts_with` 前缀匹配：`/a` 同时命中 `/assets/main-*.js`，站点自己的 bundle 会被重写成 `.js/3f.jpeg` 而 404（`docs/reference/transform-rules.md`） |
+| 被否掉 B | `starts_with` 前缀匹配：`/a` 同时命中 `/api/pic`，也曾命中过当时的 `/assets/main-*.js`，把站点 bundle 重写成 `.js/3f.jpeg` 而 404（真实故障，`docs/reference/transform-rules.md`） |
+| 被否掉 C | `matches` 正则：需要 Business / WAF Advanced，免费版直接报 `not entitled`（`docs/reference/transform-rules.md`） |
 | 代价 | 每个分类一条规则；`substring` 长度必须等于 `--hash-length`，后缀必须等于该分类的 `ext_policy`，两者都靠人工同步，改策略时要同时改规则并重生成池（`docs/reference/transform-rules.md`、`assets/catalog.json`） |
 
 ## 遗留问题

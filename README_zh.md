@@ -229,7 +229,7 @@ npm run dev
 访问策略与 `Content-Type` 纠正完全一致。
 
 为每个分类建一条 **Rewrite URL** 规则（*将 `<your-domain>` 替换为实际域名*）。匹配条件必须是**精确路径**：`eq` 在所有套餐可用；`matches` 需要 Business / WAF Advanced；
-`starts_with` 会连 `/assets/…` 一起匹配，而按扩展名写的终止条件会把整个 zone 锁死为单一后缀。两处坑的详细说明见 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
+`starts_with` 会连 `/api/pic` 一起匹配（历史上还吞掉过 `/assets/…` 的 bundle），而按扩展名写的终止条件会把整个 zone 锁死为单一后缀。两处坑的详细说明见 [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md)。
 
 | 分类 | 匹配表达式 | 路径重写 (Dynamic) |
 | :--- | :--- | :--- |
@@ -239,7 +239,7 @@ npm run dev
 | `gif` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
 > **注意**
-> * `matches` 需要 Business / WAF Advanced 套餐，示例改用所有套餐都支持的 `eq`；切勿用 `starts_with("/a")`——它同时命中 `/assets/…`，会让站点白屏。
+> * `matches` 需要 Business / WAF Advanced 套餐，示例改用所有套餐都支持的 `eq`；切勿用 `starts_with("/a")`——它同时命中 `/api/pic`（历史上还因吞掉 `/assets/…` 让站点白屏）。
 > * 重写表达式里的后缀必须与 `assets/catalog.json` 中该分类的 `ext_policy` 一致。
 > * `substring` 的截取长度必须与 `--hash-length` 一致（`2` → `0, 2`，即 256 个槽位）。
 > * 必须保持 `assets.run_worker_first: true`——重写后的请求仍会经过 Worker，由它执行访问策略并纠正 `Content-Type`。

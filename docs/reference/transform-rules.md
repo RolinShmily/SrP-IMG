@@ -56,7 +56,7 @@ concat("/a/", substring(uuidv4(cf.random_seed), 0, 2), ".jpeg")
 concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 ```
 
-重写后路径变成 `/h/ab.jpg`，不再匹配 `^/h/?$`，所以规则不会递归；浏览器地址栏仍是 `/h`。
+重写后路径变成 `/h/ab.jpg`，不再等于 `/h`，所以规则不会递归；浏览器地址栏仍是 `/h`。
 
 ## 二、为什么用路径形状，而不是扩展名
 
@@ -66,8 +66,10 @@ concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
    规则会再次触发，产出 `/gif/0a.gif/3f.jpg`。要让规则成立，所有分类就必须共用一个后缀——
    这就是"源图必须预先转成目标格式"那条约定的来源。当前代码里已经没有任何层依赖后缀唯一性
    （Worker 按分类算 `Location`，`_headers` 按路径，画廊按 `counts.json` 取后缀）。
-2. **`starts_with` 太宽**：`starts_with(path, "/a")` 也会命中 `/assets/main-abc123.js`（Vite 产物），
-   把站点自己的 CSS/JS 重写成 `/assets/main-abc123.js/3f.jpeg`，整站白屏。`^/a/?$` 只匹配精确路径。
+2. **`starts_with` 太宽**：`starts_with(path, "/a")` 会命中所有以 `/a` 开头的路径——`/api/pic`（Worker
+   别名），以及历史上曾经作为 Vite 产物目录的 `/assets/main-*.js`。后者真实发生过：`/assets/…` 被改写后
+   404，整站白屏。本项目已把 bundle 移到 `/static/` 以彻底避开单字母前缀，但 `/api/pic` 依然存在，
+   所以仍然必须用精确匹配。
 
 **`eq` 精确匹配**同时解决两点：与后缀无关、不会递归、不会外溢到其它路由。
 
@@ -83,14 +85,13 @@ concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")
 如果首页/画廊变成空白页，先在浏览器或命令行确认 bundle：
 
 ```bash
-curl -sI https://<your-domain>/assets/<bundle>.js   # 期望 200
+curl -sI https://<your-domain>/static/<bundle>.js   # 期望 200
 ```
 
-- **`/assets/*` 返回 404**：说明有一条前缀过宽的规则把它也改写了——最常见的是 `/a` 规则用了
-  `starts_with(..., "/a")`，而 `/assets/…` 同样以 `/a` 开头。把该规则改成
-  `http.request.uri.path eq "/a"` 即可恢复。
-- 规则改好后如果仍白屏，是浏览器/边缘缓存了那份 404：`_headers` 给 `/assets/*` 设了
-  `immutable`，清缓存或强制刷新后才会重新拉取。
+- **bundle 404**：说明有一条前缀过宽的规则改写了它。检查所有 `starts_with` 规则——`/a` 规则最容易
+  误伤 `/api/pic`（历史上还误伤过 `/assets/…`）。把匹配改成 `http.request.uri.path eq "/a"` 即可恢复。
+- 规则改好后如果仍白屏，是浏览器缓存了那份 404：强制刷新（Ctrl+Shift+R），必要时在 Dashboard 清
+  该前缀的缓存。
 
 ## 三、约束
 
@@ -115,7 +116,7 @@ curl -sI https://<your-domain>/h | grep -i etag
 curl -sI https://<your-domain>/h | grep -i etag
 
 # 站点自身的 bundle 必须仍能加载 —— 这是旧 /a 规则会打断的地方
-curl -sI https://<your-domain>/assets/<bundle>.js
+curl -sI https://<your-domain>/static/<bundle>.js
 
 # 不受影响的路径
 curl -sI https://<your-domain>/counts.json
@@ -131,8 +132,8 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<your-domain>/pic?img=h   # 302
 
 如果曾经以 `PROTECT_ASSET_IMAGES=0` 运行过，部署修复后应在 Dashboard 清除这四个前缀的缓存。
 Cloudflare 的 *Purge by Prefix* 属于付费能力；免费套餐只能用 *Purge by URL*（逐槽位）或
-*Purge Everything*。此外 `/assets/*` 与 `/fonts/*` 也是一年 immutable：替换字体或资源时**改名**
-（或 purge），否则客户端不会重新拉取。
+*Purge Everything*。`/fonts/*` 仍是一年 immutable：替换字体时必须**改名**（或 purge）。
+`/static/*` 刻意**不设**长缓存——`_headers` 只能按路径匹配，长缓存会把一次瞬时 404 钉住一年。
 
 ## 六、已知限制
 

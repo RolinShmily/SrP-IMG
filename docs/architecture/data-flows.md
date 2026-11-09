@@ -22,7 +22,7 @@
 1. 请求形如 `/h/00.jpg`、`/a/01.jpeg`、`/gif/0a.gif`（`src/components/image-gallery.tsx`）。
 2. `run_worker_first: true` 使请求先到 Worker，而不是直接命中静态资产（`wrangler.jsonc`）。
 3. `parseCategoryImage` 解码路径、要求三段、第二段在 `TARGETS` 中、第三段是图片后缀，并把十六进制前缀解析成槽位号（`worker/index.js`）。
-4. 不是分类图片（`/counts.json`、HTML、`/assets/*` bundle、图标）→ 直接 `env.ASSETS.fetch`，不加策略头（`worker/index.js`）。
+4. 不是分类图片（`/counts.json`、HTML、`/static/*` bundle、图标）→ 直接 `env.ASSETS.fetch`，不加策略头（`worker/index.js`）。
 5. `PROTECT_ASSET_IMAGES=1`（默认）：`checkAccess` → 取资产 → 用 `responseHeaders` 重建头（HEAD 传 `null` body）→ 纠正 MIME（`worker/index.js`）。
 6. `PROTECT_ASSET_IMAGES=0`：取资产后只纠正 MIME，保留 `_headers` 的长缓存（`worker/index.js`、`assets/static/_headers`）。
 7. `withSlotContentType` 在 `response.ok` 且格式码已知时覆写 `Content-Type`；`?`、越界槽位、404 都原样放行（`worker/index.js`）。

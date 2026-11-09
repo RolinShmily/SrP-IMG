@@ -104,6 +104,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/assets/…`, blanking the SPA. `/assets/*` lost its `immutable` cache rule so a
   transient 404 can no longer be pinned for a year.
 
+* **Bundle directory hardened** — Vite's `assetsDir` moved from `/assets` to
+  `/static`, so a single-letter category rule (`starts_with("/a")`) can no longer
+  swallow the SPA bundle. `/static/*` also lost its year-long `immutable`
+  header: `_headers` matches by path only, so it pinned a transient 404.
+
 ## [0.2.1] - 2026-10-27
 
 ### Changed

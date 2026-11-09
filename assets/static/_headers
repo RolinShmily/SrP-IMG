@@ -10,9 +10,9 @@
 /gif/*
   Cache-Control: public, max-age=31536000, immutable
 
-# NOTE: the hashed bundle under /assets/* is deliberately not given a long
+# NOTE: the hashed bundle under /static/* is deliberately not given a long
 # max-age. _headers matches by path only, so an `immutable` rule would also pin
-# a transient 404 (e.g. while a bad edge rule rewrites /assets/*) for a year.
+# a transient 404 (e.g. while a bad edge rule rewrites /static/*) for a year.
 # Self-hosted fonts: stable names, so rename them when the file changes
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable

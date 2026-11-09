@@ -230,8 +230,9 @@ gallery's direct slot links — all three entry points end at the same asset, wi
 the same access policy and the same corrected `Content-Type`.
 
 Create one **Rewrite URL** rule per category (*replace `<your-domain>`*). The match must be an **exact path**: `eq` works on every plan, while `matches`
-requires Business / WAF Advanced, `starts_with` also matches `/assets/…`, and an
-extension-based guard locks the zone to a single suffix. Both pitfalls are
+requires Business / WAF Advanced, `starts_with` also matches `/api/pic` (and once
+swallowed the bundle under `/assets/…`), and an extension-based guard locks the
+zone to a single suffix. Both pitfalls are
 explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-rules.md).
 
 | Category | Match expression | Rewrite path (dynamic) |
@@ -242,7 +243,7 @@ explained in [`docs/reference/transform-rules.md`](./docs/reference/transform-ru
 | `gif` | `(http.host eq "<your-domain>" and http.request.uri.path eq "/gif")` | `concat("/gif/", substring(uuidv4(cf.random_seed), 0, 2), ".gif")` |
 
 > **Notes**
-> * `matches` needs a Business / WAF Advanced plan; the examples use `eq`, which works on every plan. Never use `starts_with("/a")` — it also matches `/assets/…` and blanks the site.
+> * `matches` needs a Business / WAF Advanced plan; the examples use `eq`, which works on every plan. Never use `starts_with("/a")` — it also matches `/api/pic` (and used to blank the site by swallowing `/assets/…`).
 > * The suffix in each rewrite expression must equal that category's `ext_policy` in `assets/catalog.json`.
 > * The substring length must equal `--hash-length` (`2` → `0, 2`, i.e. 256 slots).
 > * `assets.run_worker_first: true` must stay enabled — the rewritten request still goes through the Worker, which applies the access policy and corrects `Content-Type`.

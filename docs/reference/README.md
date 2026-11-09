@@ -48,8 +48,8 @@
 
 | 规则 | 要点 | 出处 |
 | --- | --- | --- |
-| 每分类一条 Rewrite URL | 匹配 `^/<category>/?$`，重写到 `/<category>/<hex>.<suffix>` | `transform-rules.md` §1 |
-| 匹配形状必须带 `$` | 用 `ends_with`/`starts_with` 会误伤 `/assets/*` 或递归 | `transform-rules.md` §2 |
+| 每分类一条 Rewrite URL | 匹配 `http.request.uri.path eq "/<category>"`，重写到 `/<category>/<hex>.<suffix>` | `transform-rules.md` §1 |
+| 必须用 `eq`，不要用 `starts_with`/`matches` | `matches` 需要 Business / WAF Advanced；`starts_with("/a")` 会误伤 `/api/pic`（历史上误伤过 `/assets/…`） | `transform-rules.md` §2 |
 | 后缀必须等于 `ext_policy` | 改分类后缀要同时改规则并重生成池子 | `transform-rules.md` §3 |
 | `substring` 长度必须等于 `--hash-length` | 当前 `0, 2` 对应 256 槽 | `transform-rules.md` §3 |
 
