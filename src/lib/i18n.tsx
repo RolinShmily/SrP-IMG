@@ -79,7 +79,6 @@ export interface Translations {
     description: string;
     project: string;
     docs: string;
-    releases: string;
     blog: string;
     license: string;
     top: string;
@@ -163,7 +162,6 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       description: "基于 Cloudflare 与 Vite + React 的多分类随机图片服务。配置清晰，选择自由。",
       project: "项目源码",
       docs: "使用说明",
-      releases: "发布记录",
       blog: "作者博客",
       license: "MIT License",
       top: "返回顶部",
@@ -245,7 +243,6 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       description: "A multi-category random image service built on Cloudflare & Vite + React. Clear configuration, total freedom.",
       project: "Source Code",
       docs: "Documentation",
-      releases: "Releases",
       blog: "Author's Blog",
       license: "MIT License",
       top: "Back to top",

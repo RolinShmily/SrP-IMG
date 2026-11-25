@@ -1,0 +1,25 @@
+name: Feature
+description: Propose a new capability or improvement
+title: "[feat] "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For image copyright or removal requests, mention the image path or URL directly.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem & proposal
+      description: What problem are you solving, and how should it work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Notes / constraints (optional)
+      description: Any Cloudflare Workers limit, pipeline compatibility, or frontend constraint to keep in mind.
+    validations:
+      required: false

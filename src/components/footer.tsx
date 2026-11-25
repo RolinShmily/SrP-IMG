@@ -4,14 +4,12 @@ import {
   ArrowUpRight,
   BookOpen,
   GitFork,
-  PackageOpen,
   Rss,
   Scale,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 const REPOSITORY = "https://github.com/RolinShmily/SrP-IMG";
-const RELEASES = `${REPOSITORY}/releases`;
 const DOCS = `${REPOSITORY}#readme`;
 const BLOG = "https://blog.srprolin.com";
 const LICENSE = `${REPOSITORY}/blob/main/LICENSE`;
@@ -23,7 +21,6 @@ export function Footer() {
   const links = [
     { label: t.footer.project, url: REPOSITORY, icon: GitFork },
     { label: t.footer.docs, url: DOCS, icon: BookOpen },
-    { label: t.footer.releases, url: RELEASES, icon: PackageOpen },
     { label: t.footer.blog, url: BLOG, icon: Rss },
   ];
 

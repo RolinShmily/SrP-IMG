@@ -1,0 +1,34 @@
+name: Bug
+description: Report broken behaviour or a regression
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste Cloudflare API tokens, secrets, or private allowlist configurations.
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps / command to reproduce
+      description: Endpoint URL, browser action, or CLI command (`python -m pipeline`, `npm run build`, etc.).
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Expected vs actual behaviour
+      description: Include HTTP status/headers, console errors, or build output if available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node.js version, Python version, browser, and whether running locally or on Cloudflare Workers.
+      render: shell
+    validations:
+      required: true
