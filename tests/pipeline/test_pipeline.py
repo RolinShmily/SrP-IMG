@@ -259,6 +259,18 @@ class SlotFormatsTests(unittest.TestCase):
             )
             self.assertEqual(load_counts(work)["counts"], {"h": 16})
 
+    def test_scan_sorts_case_insensitively_across_platforms(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            write_tree(work, {
+                "assets/original/h/Z_upper.png": png_header(1600, 900),
+                "assets/original/h/a_lower.jpg": jpeg_header(1600, 900),
+            })
+            proc = run_pipeline(work, "--hash-length", "1", "--no-copy")
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            # Case-folded sort puts a_lower.jpg (j) before Z_upper.png (p) on all OSes.
+            self.assertEqual(load_slot_formats(work)["h"][:2], "jp")
+
     def test_empty_category_has_an_empty_string(self):
         with tempfile.TemporaryDirectory() as temporary:
             work = Path(temporary)
@@ -617,12 +629,22 @@ class RealDataParityTests(unittest.TestCase):
             for key in ("categories", "counts", "real_counts", "category_exts",
                         "category_aspects", "slot_ratios", "hash_length", "output_ext"):
                 self.assertEqual(actual[key], expected[key], key)
-            for category in expected["counts"]:
+            hash_length = expected["hash_length"]
+            for category, slots in expected["counts"].items():
+                ext = expected["category_exts"][category]
+                generated_names = sorted(p.name for p in (work / "assets" / "generated" / category).iterdir())
                 self.assertEqual(
-                    sorted(p.name for p in (work / "assets" / "generated" / category).iterdir()),
-                    sorted(p.name for p in (ROOT / "assets" / "generated" / category).iterdir()),
+                    generated_names,
+                    [f"{i:0{hash_length}x}{ext}" for i in range(slots)],
                     category,
                 )
+                repo_pool_dir = ROOT / "assets" / "generated" / category
+                if repo_pool_dir.exists():
+                    self.assertEqual(
+                        generated_names,
+                        sorted(p.name for p in repo_pool_dir.iterdir()),
+                        category,
+                    )
 
 
 class WorkerTargetsTests(unittest.TestCase):

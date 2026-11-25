@@ -1,9 +1,8 @@
 """Discovery stage: which categories and source files exist, and which qualify.
 
-Ordering is part of the output contract. Directories and files are sorted with
-``sorted()`` applied to :class:`pathlib.Path` objects, which on Windows compares
-case-folded name keys — a plain string sort would reorder slots, and therefore
-change which generated file each slot holds.
+Ordering is part of the output contract. Directories and files are sorted by
+case-folded name ``(p.name.lower(), p.name)`` so Linux/macOS and Windows produce
+the exact same slot mapping regardless of filesystem case sensitivity.
 """
 import json
 from pathlib import Path
@@ -63,16 +62,22 @@ def scan_categories(config: Config) -> List[CategoryInput]:
         print(f"Error: source dir {config.source_dir} not found.")
         return []
 
-    subdirs = sorted([d for d in config.source_dir.iterdir() if d.is_dir()])
+    subdirs = sorted(
+        (d for d in config.source_dir.iterdir() if d.is_dir()),
+        key=lambda p: (p.name.lower(), p.name),
+    )
     if not subdirs:
         print(f"No subdirectories under {config.source_dir}.")
         return []
 
     categories: List[CategoryInput] = []
     for subdir in subdirs:
-        images = sorted([
-            f for f in subdir.iterdir()
-            if f.is_file() and f.suffix.lower() in config.allowed_extensions
-        ])
+        images = sorted(
+            (
+                f for f in subdir.iterdir()
+                if f.is_file() and f.suffix.lower() in config.allowed_extensions
+            ),
+            key=lambda p: (p.name.lower(), p.name),
+        )
         categories.append(CategoryInput(key=subdir.name, images=images))
     return categories
