@@ -22,7 +22,7 @@ ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif', '.webp')
 # the caller's cwd is (the file outputs below stay cwd-relative on purpose).
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = REPO_ROOT / "assets" / "catalog.json"
-DEFAULT_SCHEMA = REPO_ROOT / "contracts" / "manifest.schema.json"
+DEFAULT_SCHEMA = REPO_ROOT / "assets" / "manifest.schema.json"
 
 
 @dataclass

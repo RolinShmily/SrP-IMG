@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://img.srprolin.com/contracts/manifest.schema.json",
+  "$id": "https://img.srprolin.com/assets/manifest.schema.json",
   "title": "SrP-IMG generated manifest (assets/generated/counts.json)",
   "description": "The single contract between the build-time pipeline and its consumers: the web gallery reads counts, labels and per-slot ratios; the Worker reads slot counts and extensions. Field order is part of the output contract.",
   "type": "object",

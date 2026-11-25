@@ -9,7 +9,7 @@ Ownership boundary (see the repository architecture notes):
 | `worker/targets.js`, `worker/slot_formats.js` (data only) | `worker/*.js` runtime policy logic |
 
 Data flow: `assets/original/<category>/*` + `assets/catalog.json` → scan →
-materialise → `contracts/manifest.schema.json`-validated
+materialise → `assets/manifest.schema.json`-validated
 `assets/generated/counts.json` → the two generated data modules
 (`worker/targets.js`, `worker/slot_formats.js`).
 

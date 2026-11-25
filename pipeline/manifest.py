@@ -2,7 +2,7 @@
 
 ``assets/generated/counts.json`` is read by the web app (categories, counts,
 per-slot aspect ratios) and by the Worker (slot counts and extensions). Its
-schema lives in ``contracts/manifest.schema.json`` and is enforced by the
+schema lives in ``assets/manifest.schema.json`` and is enforced by the
 small validator below, so drift fails the build instead of the browser.
 
 The field set, field order, ``json.dump`` flags and the timestamp-reuse rule are
