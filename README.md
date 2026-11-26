@@ -115,5 +115,6 @@ Also see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## License & Credits
 
 * **Source code** is licensed under the **MIT License** — see [`LICENSE`](LICENSE).
+* **Third-party assets** — bundled fonts and image credits are documented in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 * **Image assets** under `assets/original/` are **not** covered by MIT. They were collected from the internet for study and demonstration only; copyright belongs to their respective authors. Replace `assets/original/` with your own or properly licensed images before deploying. If you own an image and want it removed, please open an [Issue](https://github.com/RolinShmily/imgroll/issues).
 * **Inspirations**: interface design and edge-rewrite concepts were inspired by [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI) and [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url) by [@afoim](https://github.com/afoim) (independent implementation; no code copied).

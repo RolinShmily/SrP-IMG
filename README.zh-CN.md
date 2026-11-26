@@ -115,5 +115,6 @@ npx wrangler secret put CORS_ALLOWED_ORIGINS
 ## 开源协议与致谢
 
 * **源代码**基于 **MIT 协议** 开源，详见 [`LICENSE`](LICENSE)。
+* **第三方资源**：内置字体与图片素材的许可/版权说明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 * **图片素材声明**：MIT 协议**不覆盖** `assets/original/` 及构建产物中的图片资源。仓库自带图片收集自互联网，仅用于学习与功能演示，版权归各自原作者所有。部署时请替换为自有图片或明确授权图源；若您是版权方并希望移除某张图片，请提交 [Issue](https://github.com/RolinShmily/imgroll/issues)。
 * **致谢**：接口与边缘重写思路参考了 [@afoim](https://github.com/afoim) 的 [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI) 与 [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)（独立实现，未复制其代码）。
