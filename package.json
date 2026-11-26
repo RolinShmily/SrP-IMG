@@ -1,5 +1,5 @@
 {
-  "name": "srp-img",
+  "name": "imgroll",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,10 +17,10 @@
   "homepage": "https://img.srprolin.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RolinShmily/SrP-IMG.git"
+    "url": "git+https://github.com/RolinShmily/imgroll.git"
   },
   "bugs": {
-    "url": "https://github.com/RolinShmily/SrP-IMG/issues"
+    "url": "https://github.com/RolinShmily/imgroll/issues"
   },
   "license": "MIT",
   "author": "RoL1n_SrP <contact@srprolin.com>",

@@ -1,11 +1,11 @@
 # Contributing
 
-Thanks for taking the time to contribute. SrP-IMG is a lightweight Vite + React
+Thanks for taking the time to contribute. imgroll is a lightweight Vite + React
 gallery plus a Cloudflare Worker, so the workflow stays simple.
 
 ## Ways to help
 
-* **Bug reports** — open an [Issue](https://github.com/RolinShmily/SrP-IMG/issues) with your environment and the exact URL or command that failed.
+* **Bug reports** — open an [Issue](https://github.com/RolinShmily/imgroll/issues) with your environment and the exact URL or command that failed.
 * **Feature requests** — open an Issue describing the use case first.
 * **Pull requests** — small, focused changes are very welcome.
 * **Image copyright** — open an Issue with the image path or URL and it will be removed once confirmed.
@@ -15,8 +15,8 @@ gallery plus a Cloudflare Worker, so the workflow stays simple.
 Requirements: **Node.js 22+** and **Python 3.8+**.
 
 ```bash
-git clone https://github.com/RolinShmily/SrP-IMG.git
-cd SrP-IMG
+git clone https://github.com/RolinShmily/imgroll.git
+cd imgroll
 npm ci --ignore-scripts
 
 # Generate hashed pool and metadata (use --no-copy only in scratch trees)

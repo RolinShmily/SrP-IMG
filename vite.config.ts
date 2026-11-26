@@ -31,7 +31,7 @@ const CONTENT_TYPES: Record<string, string> = {
 function generatedAssets(): Plugin[] {
   return [
     {
-      name: "srp:generated-assets-dev",
+      name: "imgroll:generated-assets-dev",
       apply: "serve",
       configureServer(server) {
         // Mounted before Vite's own middlewares: a 1 GB pool must never be
@@ -72,7 +72,7 @@ function generatedAssets(): Plugin[] {
       },
     },
     {
-      name: "srp:generated-assets-build",
+      name: "imgroll:generated-assets-build",
       apply: "build",
       closeBundle() {
         if (!fs.existsSync(generatedDir)) {

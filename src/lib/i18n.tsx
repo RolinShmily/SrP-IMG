@@ -88,7 +88,7 @@ export interface Translations {
 export const TRANSLATIONS: Record<Language, Translations> = {
   zh: {
     meta: {
-      title: "SrP-IMG — 随机图片 API 与画廊",
+      title: "imgroll — 随机图片 API 与画廊",
       description: "基于 Cloudflare Workers 与 Vite + React 的多分类随机图片服务，支持可配置访问策略与自适应画廊。",
     },
     nav: {
@@ -105,7 +105,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     },
     home: {
       badge: "开源 · 多分类 · 可配置的随机图片服务",
-      heroTitle: "SrP-IMG 全能随机图库",
+      heroTitle: "imgroll 全能随机图库",
       heroSubtitle: "基于 Cloudflare Workers 与 Vite + React 构建的多分类随机图片 API，配备访问策略配置与自适应画廊。",
       exploreBtn: "进入画廊",
       settingsBtn: "API 与配置",
@@ -137,7 +137,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       featUaDesc: "单接口智能探测访问设备：移动端返回高清竖屏壁纸，PC 端返回横屏风景插画。",
     },
     gallery: {
-      title: "SrP-IMG 瀑布流画廊",
+      title: "imgroll 瀑布流画廊",
       subtitle: "动态加载、沉浸预览与多比例自适应",
       countSuffix: "张素材",
       emptyTitle: "该分类暂无有效图片素材",
@@ -169,7 +169,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   },
   en: {
     meta: {
-      title: "SrP-IMG — Random Image API & Gallery",
+      title: "imgroll — Random Image API & Gallery",
       description: "A multi-category random image service with configurable access policies and an adaptive gallery, built on Cloudflare Workers and Vite + React.",
     },
     nav: {
@@ -186,7 +186,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     },
     home: {
       badge: "Open Source · Multiple Categories · Configurable Access",
-      heroTitle: "SrP-IMG Random Image API",
+      heroTitle: "imgroll Random Image API",
       heroSubtitle: "A multi-category random image API with configurable access policies and an adaptive gallery, built on Cloudflare Workers & Vite + React.",
       exploreBtn: "Explore Gallery",
       settingsBtn: "API & Config",
@@ -218,7 +218,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
       featUaDesc: "Intelligently delivers vertical wallpapers to mobile devices and horizontal scenery to desktops.",
     },
     gallery: {
-      title: "SrP-IMG Visual Gallery",
+      title: "imgroll Visual Gallery",
       subtitle: "Dynamic loading, immersive modal preview & adaptive aspect ratios",
       countSuffix: "images",
       emptyTitle: "No valid images in this category",
@@ -271,7 +271,7 @@ function subscribe(callback: () => void) {
 function getSnapshot(): Language {
   if (typeof window === "undefined") return "zh";
   try {
-    const stored = localStorage.getItem("srp_lang") as Language | null;
+    const stored = localStorage.getItem("imgroll_lang") as Language | null;
     if (stored === "zh" || stored === "en") return stored;
   } catch {
     // Storage may be disabled; the in-memory preference still works.
@@ -303,7 +303,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const setLang = (newLang: Language) => {
     sessionLanguage = newLang;
     try {
-      localStorage.setItem("srp_lang", newLang);
+      localStorage.setItem("imgroll_lang", newLang);
     } catch {
       // Keep this tab's preference when storage is unavailable.
     }

@@ -1,6 +1,6 @@
 # 前端设计与规范
 
-本文整理 SrP-IMG 的设计 token、组件约定、动效规范、双语与无障碍实现，以及 README 预览截图说明。
+本文整理 imgroll 的设计 token、组件约定、动效规范、双语与无障碍实现，以及 README 预览截图说明。
 
 ## 1. 设计 Token
 
@@ -63,7 +63,7 @@
 ### 国际化（i18n）
 
 - 字典拆分三处：`src/lib/i18n.tsx`（全局骨架文案）、`src/lib/gallery-translations.ts`（带序号/数量参数的画廊文案）、`src/lib/api-translations.ts`（API 面板文案）。
-- 语言持久化于 `localStorage["srp_lang"]`（仅 `"zh" | "en"`），读取顺序为 `localStorage → 内存偏好 → navigator.language → "zh"`，并通过 `storage` 事件跨标签同步；写入异常降级为标签页内生效。
+- 语言持久化于 `localStorage["imgroll_lang"]`（仅 `"zh" | "en"`），读取顺序为 `localStorage → 内存偏好 → navigator.language → "zh"`，并通过 `storage` 事件跨标签同步；写入异常降级为标签页内生效。
 - `I18nProvider` 统一维护 `document.documentElement.lang`（`zh-CN` / `en`）、`document.title`（`页面名 · 标题`）与 `meta[name="description"]`，其他组件不得直接修改。
 
 ### 键盘与 ARIA 约定

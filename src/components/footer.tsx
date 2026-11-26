@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
-const REPOSITORY = "https://github.com/RolinShmily/SrP-IMG";
+const REPOSITORY = "https://github.com/RolinShmily/imgroll";
 const DOCS = `${REPOSITORY}#readme`;
 const BLOG = "https://blog.srprolin.com";
 const LICENSE = `${REPOSITORY}/blob/main/LICENSE`;
@@ -48,12 +48,12 @@ export function Footer() {
             >
               <img
                 src="/icon.svg"
-                alt="SrP-IMG Logo"
+                alt="imgroll Logo"
                 width={22}
                 height={22}
                 className="size-5 sm:size-5.5 rounded-md shrink-0"
               />
-              <span>SrP-IMG</span>
+              <span>imgroll</span>
             </Link>
             <span className="hidden sm:inline text-border" aria-hidden="true">·</span>
             <p className="text-xs text-muted-foreground">

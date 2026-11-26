@@ -113,7 +113,7 @@ export function Navbar() {
               loading="eager"
               fetchPriority="high"
             />
-            <span className="text-base sm:text-lg font-semibold tracking-tight">SrP-IMG</span>
+            <span className="text-base sm:text-lg font-semibold tracking-tight">imgroll</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -147,7 +147,7 @@ export function Navbar() {
           <div className="site-header-cluster flex items-center gap-1">
             <LangToggle />
             <a
-              href="https://github.com/RolinShmily/SrP-IMG"
+              href="https://github.com/RolinShmily/imgroll"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex size-9 items-center justify-center rounded-lg text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"

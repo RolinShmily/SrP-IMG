@@ -1,12 +1,12 @@
-<h1 align="center">SrP-IMG — 随机图片 API & 画廊</h1>
+<h1 align="center">imgroll — 随机图片 API & 画廊</h1>
 
 <p align="center">
   <a href="./README.md">English</a> | <b>简体中文</b>
 </p>
 
 <p align="center">
-  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
-  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/test.yml"><img alt="Test" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/test.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/imgroll/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/imgroll/actions/workflows/deploy.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/imgroll/actions/workflows/test.yml"><img alt="Test" src="https://github.com/RolinShmily/imgroll/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://vite.dev"><img alt="Vite 7" src="https://img.shields.io/badge/Vite-7-646CFF.svg"></a>
   <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg"></a>
@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/screenshots/home.webp" alt="SrP-IMG 首页" width="1200">
+  <img src="./assets/screenshots/home.webp" alt="imgroll 首页" width="1200">
 </p>
 
 <details>
@@ -28,7 +28,7 @@
 
 </details>
 
-**SrP-IMG** 是基于 **Cloudflare Workers** + **Vite / React** 构建的无服务器多分类随机图片 API 与自适应瀑布流画廊。通过 Python 离线预构建将静态素材扩散为确定性槽位，开箱支持 302 随机跳转、可选边缘无感重写、运行时防盗链/CORS 策略以及中英双语画廊。
+**imgroll** 是基于 **Cloudflare Workers** + **Vite / React** 构建的无服务器多分类随机图片 API 与自适应瀑布流画廊。通过 Python 离线预构建将静态素材扩散为确定性槽位，开箱支持 302 随机跳转、可选边缘无感重写、运行时防盗链/CORS 策略以及中英双语画廊。
 
 ## 使用方式
 
@@ -115,5 +115,5 @@ npx wrangler secret put CORS_ALLOWED_ORIGINS
 ## 开源协议与致谢
 
 * **源代码**基于 **MIT 协议** 开源，详见 [`LICENSE`](LICENSE)。
-* **图片素材声明**：MIT 协议**不覆盖** `assets/original/` 及构建产物中的图片资源。仓库自带图片收集自互联网，仅用于学习与功能演示，版权归各自原作者所有。部署时请替换为自有图片或明确授权图源；若您是版权方并希望移除某张图片，请提交 [Issue](https://github.com/RolinShmily/SrP-IMG/issues)。
+* **图片素材声明**：MIT 协议**不覆盖** `assets/original/` 及构建产物中的图片资源。仓库自带图片收集自互联网，仅用于学习与功能演示，版权归各自原作者所有。部署时请替换为自有图片或明确授权图源；若您是版权方并希望移除某张图片，请提交 [Issue](https://github.com/RolinShmily/imgroll/issues)。
 * **致谢**：接口与边缘重写思路参考了 [@afoim](https://github.com/afoim) 的 [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI) 与 [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url)（独立实现，未复制其代码）。

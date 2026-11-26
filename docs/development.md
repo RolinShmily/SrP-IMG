@@ -24,8 +24,8 @@
 
 生成池体积约 1 GB 且被 git 忽略，因此不放进 `publicDir`（`assets/static`），而由两个插件接入根路径：
 
-- **`srp:generated-assets-dev`（serve）**：挂载在 Vite 自有中间件之前，将 `/counts.json` 与 `/<cat>/<hex>.<ext>` 直接映射到 `assets/generated/`（含路径穿越校验与 `HEAD` 处理）。
-- **`srp:generated-assets-build`（build）**：在 `closeBundle` 阶段将 `assets/generated/` 的分类目录与 `counts.json` 串行拷入 `dist/`；若 `assets/generated/` 缺失则直接抛错提示先跑 `npm run gen`。
+- **`imgroll:generated-assets-dev`（serve）**：挂载在 Vite 自有中间件之前，将 `/counts.json` 与 `/<cat>/<hex>.<ext>` 直接映射到 `assets/generated/`（含路径穿越校验与 `HEAD` 处理）。
+- **`imgroll:generated-assets-build`（build）**：在 `closeBundle` 阶段将 `assets/generated/` 的分类目录与 `counts.json` 串行拷入 `dist/`；若 `assets/generated/` 缺失则直接抛错提示先跑 `npm run gen`。
 
 ### 注意事项与危险操作
 

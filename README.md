@@ -1,12 +1,12 @@
-<h1 align="center">SrP-IMG — Random Image API & Gallery</h1>
+<h1 align="center">imgroll — Random Image API & Gallery</h1>
 
 <p align="center">
   <b>English</b> | <a href="./README.zh-CN.md">简体中文</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/deploy.yml/badge.svg"></a>
-  <a href="https://github.com/RolinShmily/SrP-IMG/actions/workflows/test.yml"><img alt="Test" src="https://github.com/RolinShmily/SrP-IMG/actions/workflows/test.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/imgroll/actions/workflows/deploy.yml"><img alt="Deploy Worker" src="https://github.com/RolinShmily/imgroll/actions/workflows/deploy.yml/badge.svg"></a>
+  <a href="https://github.com/RolinShmily/imgroll/actions/workflows/test.yml"><img alt="Test" src="https://github.com/RolinShmily/imgroll/actions/workflows/test.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3DA639.svg"></a>
   <a href="https://vite.dev"><img alt="Vite 7" src="https://img.shields.io/badge/Vite-7-646CFF.svg"></a>
   <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg"></a>
@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/screenshots/home.webp" alt="SrP-IMG home page" width="1200">
+  <img src="./assets/screenshots/home.webp" alt="imgroll home page" width="1200">
 </p>
 
 <details>
@@ -28,7 +28,7 @@
 
 </details>
 
-**SrP-IMG** is a serverless multi-category random image API and adaptive waterfall gallery built on **Cloudflare Workers** + **Vite / React**. A Python build pipeline hashes your source images into deterministic static slots, giving you fast random redirects, optional edge URL rewrites, runtime Referer/CORS protection, and a zero-config bilingual gallery.
+**imgroll** is a serverless multi-category random image API and adaptive waterfall gallery built on **Cloudflare Workers** + **Vite / React**. A Python build pipeline hashes your source images into deterministic static slots, giving you fast random redirects, optional edge URL rewrites, runtime Referer/CORS protection, and a zero-config bilingual gallery.
 
 ## Usage
 
@@ -115,5 +115,5 @@ Also see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## License & Credits
 
 * **Source code** is licensed under the **MIT License** — see [`LICENSE`](LICENSE).
-* **Image assets** under `assets/original/` are **not** covered by MIT. They were collected from the internet for study and demonstration only; copyright belongs to their respective authors. Replace `assets/original/` with your own or properly licensed images before deploying. If you own an image and want it removed, please open an [Issue](https://github.com/RolinShmily/SrP-IMG/issues).
+* **Image assets** under `assets/original/` are **not** covered by MIT. They were collected from the internet for study and demonstration only; copyright belongs to their respective authors. Replace `assets/original/` with your own or properly licensed images before deploying. If you own an image and want it removed, please open an [Issue](https://github.com/RolinShmily/imgroll/issues).
 * **Inspirations**: interface design and edge-rewrite concepts were inspired by [EdgeOne_Function_PicAPI](https://github.com/afoim/EdgeOne_Function_PicAPI) and [cf-rule-random-url](https://github.com/afoim/cf-rule-random-url) by [@afoim](https://github.com/afoim) (independent implementation; no code copied).
